@@ -4,10 +4,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import imshow,imread
 
-model_path = 'brain_tumor_segmentation.hdf5'
-model = load_model(model_path, compile=False)
+
 
 def highlight_tumor(image_path, model):
+    model_path = 'brain_tumor_segmentation.hdf5'
+    model = load_model(model_path, compile=False)
     image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
     image = cv2.resize(image, (256, 256))
     image = image / 255.0
