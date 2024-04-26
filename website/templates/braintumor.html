@@ -16,7 +16,7 @@
     <h2>Upload an Image</h2>
     
     <!-- Form Start -->
-    <form action="/upload" method="post" enctype="multipart/form-data">
+    <form action="/brainTumor" method="post" enctype="multipart/form-data">
         <!-- Image Input Field -->
         <label for="image">Select an image:</label>
         <input type="file" id="image" name="image" accept="image/*" onchange="previewImage(event)">
@@ -28,7 +28,9 @@
         <input type="submit" value="Upload">
     </form>
     <!-- Form End -->
-
+    {% if data==1 %}
+    <img id="imageResult" src='../static/results/brain_tumor_result.png' alt="Image Preview">
+    {% endif %}
     <script>
         function previewImage(event) {
             var reader = new FileReader();
