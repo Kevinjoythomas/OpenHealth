@@ -8,7 +8,7 @@
 </head>
 <body>
     <h2>Lung Cancer</h2>
-    <form id="symptomsForm" action="/lung" method="post">
+    <form id="symptomsForm" action="/lung" method="POST">
         <div class="input-group">
             <label for="yellow_fingers">Yellow Fingers</label>
             <select id="yellow_fingers" name="yellow_fingers">
@@ -95,12 +95,12 @@
         </div>
         <button type="submit">Submit</button>
     </form>
-    {% if data=="2" %}
+    {% if data==0 %}
     <div class="res">
         <h1>and the result for that data is Positive</h1>
     </div>
 
-    {% elif data=="1" %}
+    {% elif data==1 %}
     <div class="res">
         <h1>and the result for that data is Negative</h1>
     </div>
