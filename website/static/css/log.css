@@ -239,4 +239,49 @@ p{
     100%{
         width: 250px;
     }   
+
 }
+
+.infield {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 1em;
+  }
+  
+  .infield input[type="text"],
+  .infield input[type="email"],
+  .infield input[type="password"],
+  .infield select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc; /* match border color to other inputs */
+    border-radius: 4px;
+    font-size: 16px;
+    line-height: 1.5;
+  }
+  
+  /* Styles for the select element to match the other input fields */
+  .infield select {
+    -webkit-appearance: none; /* Removes the native arrow for Webkit browsers */
+    -moz-appearance: none; /* Removes the native arrow for Firefox */
+    appearance: none; /* Removes the native arrow for IE */
+    background: url('data:image/svg+xml;utf8,<svg fill="%23333" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>') no-repeat right 10px center/12px 12px; /* Add your custom arrow */
+    cursor: pointer; /* Changes cursor to pointer to indicate this is a dropdown */
+  }
+  
+  .infield select:focus {
+    border-color: #80bdff;
+    outline: none;
+  }
+  
+  .infield label {
+    margin-bottom: 0.5em;
+    color: #333; /* match label color to your form */
+    font-size: 16px; /* match font size to your form */
+  }
+  
+  /* To cover the native arrow in IE */
+  .infield select::-ms-expand {
+    display: none;
+  }

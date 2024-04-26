@@ -1,5 +1,5 @@
 # from flask_cors import CORS
-from flask import Flask,render_template,request
+from flask import Flask,render_template,request,redirect
 import pickle
 import sklearn
 import joblib
@@ -7,13 +7,15 @@ import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import firestore
 
-cred = credentials.Certificate("C:\Users\karthikeya\Dropbox\PC\Downloads\openhealth-25698-firebase-adminsdk-mmnxo-b16e2f7b80.json")
+cred = credentials.Certificate("C:\\Users\\karthikeya\\Dropbox\\PC\\Downloads\\openhealth-25698-firebase-adminsdk-mmnxo-b16e2f7b80.json")
+
 firebase_admin.initialize_app(cred)
 
 app = Flask(__name__)
 # cors = CORS(app,resources={r'/*':{'origin':'*'}})ṇ
 
 db = firestore.client()
+session=0
 
 @app.route('/')
 def test():
@@ -80,7 +82,61 @@ def features():
    return render_template("features.html")
 
 
-       
+@app.route('/login',methods=["POST","GET"])
+def login():
+   if(request.method=="post"):
+      email=request.form["email"]
+      password=request.form["password"]
+      user = db.collection('doctors').where('email', '=', email).limit(1).get()
+      if (user== None):
+         return redirect("/login")
+      else:
+         if(user.password==password):
+            session=1
+            return redirect("/features")
+         else:
+            return redirect("/login")
+         
+   else:
+      return render_template("login.html")
+   
+@app.route('/signup',methods=["POST","GET"])
+def signup():
+   if(request.method=="post"):
+      email=request.form["email1"]
+      password=request.form["password1"]
+      name=request.form['name1']
+      specialisation=request.form['specialisation']
+      user = db.collection('doctors').where('email', '=', email).limit(1).get()
+      if(user!=None):
+         return redirect('/singup')
+      else:
+         data= {
+        'name': name,
+        'email': email,  # Convert to int if needed
+        'password': password,
+        'specialisation':specialisation
+               }
+         doc=db.collection('doctors').add(data)
+         print("signin successfully")
+   else:
+      return render_template("login.html")
+
+
+   
+         
+
+
+
+@app.route('/notifications',methods=["GET","POST"])
+def notification():
+   docs = db.collection('notifications').get()
+   if(docs==None):
+      return render_template('')
+   else:
+      return redirect()
+      
+         
       
 if __name__ == '__main__':
   app.run(debug=True) 
