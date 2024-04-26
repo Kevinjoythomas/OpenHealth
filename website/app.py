@@ -3,11 +3,17 @@ from flask import Flask,render_template,request
 import pickle
 import sklearn
 import joblib
+import firebase_admin
+from firebase_admin import credentials
+from firebase_admin import firestore
 
+cred = credentials.Certificate("C:\Users\karthikeya\Dropbox\PC\Downloads\openhealth-25698-firebase-adminsdk-mmnxo-b16e2f7b80.json")
+firebase_admin.initialize_app(cred)
 
 app = Flask(__name__)
 # cors = CORS(app,resources={r'/*':{'origin':'*'}})ṇ
 
+db = firestore.client()
 
 @app.route('/')
 def test():
