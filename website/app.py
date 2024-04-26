@@ -53,10 +53,15 @@ def lung():
       return render_template('lung.html',data=res)
     else:
       return render_template('lung.html',data="100")
+
+@app.route('/brainTumor',methods=["POST","GET"])
 def brain():
    if(request.method=="POST"):
       if 'image' in request.files:
         image_file = request.files['image']
+
+   else:
+      return render_template("braintumor.html")
 
 @app.route('/test')
 def tesasfasf():
