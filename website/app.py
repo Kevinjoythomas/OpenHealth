@@ -29,6 +29,10 @@ def lung():
       return render_template('lung.html',result="None")
     else:
       return render_template('lung.html')
-
+def brain():
+   if(request.method=="POST"):
+      if 'image' in request.files:
+        image_file = request.files['image']
+      
 if __name__ == '__main__':
   app.run(debug=True)
