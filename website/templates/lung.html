@@ -96,6 +96,20 @@
             </div>
             <button type="submit">Submit</button>
         </form>
+        <div class="card" onclick="toggleForm('brainTumorForm')">
+            <h2>Click to Enter Brain Tumor Data</h2>
+            <form id="brainTumorForm" class="form" style="display:none;"action="/BrainTumorSegmentation" method="post">
+                <div class="input-group">
+                    <label for="imageUpload">Upload Brain Image:</label>
+                    <input type="file" id="imageUpload" name="imageUpload" accept=".png">
+                    <button type="button" onclick="previewImage();">Preview Image</button>
+                </div>
+                <div id="imagePreview" style="display:none;">
+                    <img src="" alt="Brain Image Preview" id="preview" style="max-width: 100%; height: auto;">
+                </div>
+                <button type="submit">Submit Brain Tumor Data</button>
+            </form>
+        </div>
     </div>
     <script src="../static/lung.js"></script>
 </body>

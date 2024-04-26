@@ -49,3 +49,11 @@ button {
 button:hover {
     background-color: #218838;
 }
+.form {
+    display: none; 
+}
+
+.input-group img {
+    max-width: 100%;
+    height: auto;
+}
