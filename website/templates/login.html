@@ -14,37 +14,27 @@
 
     <div class="container" id="container">
         <div class="form-container sign-up-container">
-            <form action="#">
+            <form action="/signup" method="post">
                 <h1>Create Account</h1>
-                <div class="social-container">
-                    <a href="#" class="social"><i class="fab fa-facebook-f"></i></a>
-                    <a href="#" class="social"><i class="fab fa-google-plus-g"></i></a>
-                    <a href="#" class="social"><i class="fab fa-linkedin-in"></i></a>
-                </div>
                 <span>or use your email for registration</span>
                 <div class="infield">
-                    <input type="text" placeholder="Name" />
+                    <input type="text" placeholder="Name" name="name1"/>
                     <label></label>
                 </div>
                 <div class="infield">
-                    <input type="email" placeholder="Email" name="email"/>
+                    <input type="email" placeholder="Email" name="email1"/>
                     <label></label>
                 </div>
                 <div class="infield">
-                    <input type="password" placeholder="Password" />
+                    <input type="password" placeholder="password" name="password1" />
                     <label></label>
                 </div>
                 <button>Sign Up</button>
             </form>
         </div>
         <div class="form-container sign-in-container">
-            <form action="#">
+            <form action="/login" method="post">
                 <h1>Sign in</h1>
-                <div class="social-container">
-                    <a href="#" class="social"><i class="fab fa-facebook-f"></i></a>
-                    <a href="#" class="social"><i class="fab fa-google-plus-g"></i></a>
-                    <a href="#" class="social"><i class="fab fa-linkedin-in"></i></a>
-                </div>
                 <span>or use your account</span>
                 <div class="infield">
                     <input type="email" placeholder="Email" name="email"/>
@@ -55,6 +45,17 @@
                     <label></label>
                 </div>
                 <a href="#" class="forgot">Forgot your password?</a>
+                <div class="infield">
+                    <select name="specialization" required>
+                        <option value="">Select Specialization</option>
+                        <option value="oncologist">Oncologist</option>
+                        <option value="neurologist">Neurologist</option>
+                        <option value="pulmonologist">Pulmonologist</option>
+                        <option value="dermatologist">Dermatologist</option>
+                        <option value="gastroenterologist">Gastroenterologist</option>
+                    </select>
+                    <label for="specialization"></label>
+                </div>
                 <button>Sign In</button>
             </form>
         </div>
