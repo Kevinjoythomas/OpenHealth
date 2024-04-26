@@ -94,8 +94,20 @@
                     <option value="yes">Yes</option>
                 </select>
             </div>
-            <button type="submit">Submit</button>
+            <button type="submit" class="addTextBtn">Submit</button>
         </form>
-        <P>{{result}}</P>
+        <p class="textContainer"></p>
+
+        <script>
+            // Function to add text to the text container
+            function addText() {
+                var textContainer = document.getElementById("textContainer");
+                var newText = document.createTextNode(result);
+                textContainer.appendChild(newText);
+            }
+    
+            // Event listener for the button click
+            document.getElementById("addTextBtn").addEventListener("click", addText);
+        </script>
     </div>
 </body>
