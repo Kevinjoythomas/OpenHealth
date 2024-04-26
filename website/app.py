@@ -43,7 +43,7 @@ def lung():
         return res
       print(features)
       if len(features)==0:
-        return render_template('lung.html',data="gi")
+        return render_template('lung.html',data="100")
       features = transform(features)
       model = joblib.load('./models/lung_cancer_text/lung_cancer_model.pkl')
       res = model.predict([features]) 
@@ -51,7 +51,7 @@ def lung():
 
       return render_template('lung.html',data=res[0])
     else:
-      return render_template('lung.html')
+      return render_template('lung.html',data="100")
 def brain():
    if(request.method=="POST"):
       if 'image' in request.files:
