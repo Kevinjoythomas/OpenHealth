@@ -14,16 +14,21 @@ def test():
 def log():
     return render_template('login.html')
 
-@app.route('/test', methods=["POST", "GET"])
-def test1():
+@app.route('/lung', methods=["POST", "GET"])
+def lung():
     if(request.method=="POST"):
-      print('abcd')
-      name = request.form['name']
-      email = request.form['email']
-      return render_template('test1.html', name=name,email=email)
+
+      features= [request.form["yellow_fingers"],request.form["anxiety"],request.form["peer_pressure"],request.form["chronic_disease"],
+                 request.form["fatigue"],
+                 request.form["allergy"],
+                 request.form["wheezing"],
+                 request.form["alcohol_consuming"],
+                 request.form["coughing"],
+                 request.form["swallowing_difficulty"],
+                 request.form["chest_pain"]]
+      return render_template('lung.html')
     else:
-      print('abc')
-      return render_template('test.html')
+      return render_template('lung.html')
 
 if __name__ == '__main__':
   app.run(debug=True)
