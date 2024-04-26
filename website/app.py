@@ -126,28 +126,12 @@ def lung():
 
 @app.route('/brainTumor',methods=["POST","GET"])
 def brain():
-  if request.method=="POST":
-    f=request.files['image']
-    file_path = 'website/static/test_images/'+f.filename
-    highlight_tumor(file_path)
-    return render_template("braintumor.html",data=1)
-  else:
-    return render_template("braintumor.html",data=0)
+   if(request.method=="POST"):
+      if 'image' in request.files:
+        image_file = request.files['image']
 
-
-@app.route('/ChatBot',methods=['POST','GET'])
-def ChatBot():
-  if request.method=="POST":
-    q=request.form['prompt']
-    res=run_conversation(request.form['prompt'])
-    res = res.split("**")
-    t=[q,res]
-    cache['chats'].append(t)
-    return render_template('ChatBot.html',data=cache['chats'])
-  else:
-    cache['chats']=[]
-    return render_template('ChatBot.html',data=cache['chats'])
-
+   else:
+      return render_template("braintumor.html")
 
 @app.route('/test')
 def tesasfasf():
