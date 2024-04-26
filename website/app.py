@@ -4,6 +4,7 @@ import pickle
 import sklearn
 import joblib
 
+
 app = Flask(__name__)
 # cors = CORS(app,resources={r'/*':{'origin':'*'}})ṇ
 
@@ -70,6 +71,9 @@ def tesasfasf():
 @app.route('/features',methods=["POST","GET"])
 def features():
    return render_template("features.html")
+
+
+       
       
 if __name__ == '__main__':
   app.run(debug=True) 
