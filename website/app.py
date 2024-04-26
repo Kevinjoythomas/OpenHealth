@@ -20,6 +20,7 @@ def log():
 @app.route('/lung', methods=["POST", "GET"])
 def lung():
     if(request.method=="POST"):
+      print('hiii')
 
       features= [request.form["yellow_fingers"],
                  request.form["anxiety"],

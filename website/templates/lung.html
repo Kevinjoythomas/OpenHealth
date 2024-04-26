@@ -1,111 +1,108 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lung Cancer Symptoms Form</title>
-    <link rel="stylesheet" href="../static/css/lung.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lung Cancer Evaluation Form</title>
+<link rel="stylesheet" href="../static/css/lung.css">
 </head>
 <body>
-    <h2>Lung Cancer</h2>
-    <form id="symptomsForm" action="/lung" method="POST">
-        <div class="input-group">
+
+<div class="container">
+    <h1>Lung Cancer Evaluation</h1>
+    <form id="lungCancerForm" action="/lung" method="POST">
+        <div class="form-group">
             <label for="yellow_fingers">Yellow Fingers</label>
-            <select id="yellow_fingers" name="yellow_fingers">
+            <select name="yellow_fingers" class="form-control">
                 <option value="no">No</option>
                 <option value="yes">Yes</option>
             </select>
         </div>
-        <div class="input-group">
+        <div class="form-group">
             <label for="anxiety">Anxiety</label>
-            <select id="anxiety" name="anxiety">
+            <select name="anxiety" class="form-control">
                 <option value="no">No</option>
                 <option value="yes">Yes</option>
             </select>
         </div>
-        <div class="input-group">
+        <div class="form-group">
             <label for="peer_pressure">Peer Pressure</label>
-            <select id="peer_pressure" name="peer_pressure">
+            <select name="peer_pressure" class="form-control">
                 <option value="no">No</option>
                 <option value="yes">Yes</option>
             </select>
         </div>
-        <div class="input-group">
+        <div class="form-group">
             <label for="chronic_disease">Chronic Disease</label>
-            <select id="chronic_disease" name="chronic_disease">
+            <select name="chronic_disease" class="form-control">
                 <option value="no">No</option>
                 <option value="yes">Yes</option>
             </select>
         </div>
-        <div class="input-group">
+        <div class="form-group">
             <label for="fatigue">Fatigue</label>
-            <select id="fatigue" name="fatigue">
+            <select name="fatigue" class="form-control">
                 <option value="no">No</option>
                 <option value="yes">Yes</option>
             </select>
         </div>
-        <div class="input-group">
+        <div class="form-group">
             <label for="allergy">Allergy</label>
-            <select id="allergy" name="allergy">
+            <select name="allergy" class="form-control">
                 <option value="no">No</option>
                 <option value="yes">Yes</option>
             </select>
         </div>
-        <div class="input-group">
+        <div class="form-group">
             <label for="wheezing">Wheezing</label>
-            <select id="wheezing" name="wheezing">
+            <select name="wheezing" class="form-control">
                 <option value="no">No</option>
                 <option value="yes">Yes</option>
             </select>
         </div>
-        <div class="input-group">
+        <div class="form-group">
             <label for="alcohol_consuming">Alcohol Consuming</label>
-            <select id="alcohol_consuming" name="alcohol_consuming">
+            <select name="alcohol_consuming" class="form-control">
                 <option value="no">No</option>
                 <option value="yes">Yes</option>
             </select>
         </div>
-        <div class="input-group">
+        <div class="form-group">
             <label for="coughing">Coughing</label>
-            <select id="coughing" name="coughing">
+            <select name="coughing" class="form-control">
                 <option value="no">No</option>
                 <option value="yes">Yes</option>
             </select>
         </div>
-        <div class="input-group">
+        <div class="form-group">
             <label for="swallowing_difficulty">Swallowing Difficulty</label>
-            <select id="swallowing_difficulty" name="swallowing_difficulty">
+            <select name="swallowing_difficulty" class="form-control">
                 <option value="no">No</option>
                 <option value="yes">Yes</option>
             </select>
         </div>
-        <div class="input-group">
+        <div class="form-group">
             <label for="chest_pain">Chest Pain</label>
-            <select id="chest_pain" name="chest_pain">
+            <select name="chest_pain" class="form-control">
                 <option value="no">No</option>
                 <option value="yes">Yes</option>
             </select>
         </div>
-        <div class="input-group">
-            <label for="lung_cancer">Lung Cancer</label>
-            <select id="lung_cancer" name="lung_cancer">
-                <option value="no">No</option>
-                <option value="yes">Yes</option>
-            </select>
+        <div class="form-group">
+            <button type="submit" class="btn-submit">Submit</button>
         </div>
-        <button type="submit">Submit</button>
     </form>
-    {% if data==0 %}
+    
+    {% if data == 1 %}
     <div class="res">
         <h1>and the result for that data is Positive</h1>
     </div>
-
-    {% elif data==1 %}
+    {% elif data == 0 %}
     <div class="res">
         <h1>and the result for that data is Negative</h1>
     </div>
-
     {% endif %}
+</div>
 
 </body>
 </html>
