@@ -95,8 +95,17 @@
         </div>
         <button type="submit">Submit</button>
     </form>
+    {% if data=="2" %}
     <div class="res">
-        <h1>and the result for that data is </h1>
+        <h1>and the result for that data is Positive</h1>
     </div>
+
+    {% elif data=="1" %}
+    <div class="res">
+        <h1>and the result for that data is Negative</h1>
+    </div>
+
+    {% endif %}
+
 </body>
 </html>
