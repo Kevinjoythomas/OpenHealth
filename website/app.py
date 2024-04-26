@@ -47,15 +47,25 @@ def lung():
       features = transform(features)
       model = joblib.load('./models/lung_cancer_text/lung_cancer_model.pkl')
       res = model.predict([features]) 
-      print(res[0])
+      res = int(res[0])
+      print(res)
 
-      return render_template('lung.html',data=res[0])
+      return render_template('lung.html',data=res)
     else:
       return render_template('lung.html',data="100")
+
+@app.route('/brainTumor',methods=["POST","GET"])
 def brain():
    if(request.method=="POST"):
       if 'image' in request.files:
         image_file = request.files['image']
+
+   else:
+      return render_template("braintumor.html")
+
+@app.route('/test')
+def tesasfasf():
+   return render_template('test1.html')
       
 if __name__ == '__main__':
   app.run(debug=True)

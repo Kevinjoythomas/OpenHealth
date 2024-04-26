@@ -8,7 +8,7 @@
 </head>
 <body>
     <h2>Lung Cancer</h2>
-    <form id="symptomsForm" action="/lung" method="post">
+    <form id="symptomsForm" action="/lung" method="POST">
         <div class="input-group">
             <label for="yellow_fingers">Yellow Fingers</label>
             <select id="yellow_fingers" name="yellow_fingers">
@@ -95,7 +95,11 @@
         </div>
         <button type="submit">Submit</button>
     </form>
+<<<<<<< HEAD
     {% if data==2 %}
+=======
+    {% if data==0 %}
+>>>>>>> 6c05d1e0a9df850d6b1eff0b4d69ea764ae05272
     <div class="res">
         <h1>and the result for that data is Positive</h1>
     </div>
