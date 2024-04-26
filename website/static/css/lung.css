@@ -1,24 +1,11 @@
 body {
     display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
     height: 100vh;
     background-color: #f4f4f9;
-}
-
-.card {
-    width: 320px;
-    padding: 20px;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    background-color: white;
-    border-radius: 8px;
-    text-align: center;
-    cursor: pointer;
-    transition: box-shadow 0.3s ease-in-out;
-}
-
-.card:hover {
-    box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+    font-family: 'Poppins', sans-serif;
 }
 
 .input-group {
@@ -49,11 +36,8 @@ button {
 button:hover {
     background-color: #218838;
 }
-.form {
-    display: none; 
-}
-
-.input-group img {
-    max-width: 100%;
-    height: auto;
+.res{
+    background: red;
+    margin-top: 20px;
+    font-size: 12px;
 }
