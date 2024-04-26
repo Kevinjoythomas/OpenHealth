@@ -26,9 +26,9 @@ def lung():
                  request.form["coughing"],
                  request.form["swallowing_difficulty"],
                  request.form["chest_pain"]]
-      return render_template('lung.html')
+      return render_template('lung.html',result="None")
     else:
       return render_template('lung.html')
 
-   
-
+if __name__ == '__main__':
+  app.run(debug=True)
