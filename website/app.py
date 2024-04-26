@@ -30,5 +30,5 @@ def lung():
     else:
       return render_template('lung.html')
 
-if __name__ == '__main__':
-  app.run(debug=True)
+   
+
