@@ -6,7 +6,7 @@ from matplotlib.pyplot import imshow,imread
 
 
 
-def highlight_tumor(image_path, model):
+def highlight_tumor(image_path):
     model_path = 'brain_tumor_segmentation.hdf5'
     model = load_model(model_path, compile=False)
     image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
@@ -38,4 +38,4 @@ def highlight_tumor(image_path, model):
 
     
 image_path = 'test.png'
-highlight_tumor(image_path, model)
+highlight_tumor(image_path)
