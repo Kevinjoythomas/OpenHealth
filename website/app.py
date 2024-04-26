@@ -1,6 +1,8 @@
 # from flask_cors import CORS
 from flask import Flask,render_template,request
-
+import pickle
+import sklearn
+import joblib
 
 app = Flask(__name__)
 # cors = CORS(app,resources={r'/*':{'origin':'*'}})ṇ
@@ -18,7 +20,10 @@ def log():
 def lung():
     if(request.method=="POST"):
 
-      features= [request.form["yellow_fingers"],request.form["anxiety"],request.form["peer_pressure"],request.form["chronic_disease"],
+      features= [request.form["yellow_fingers"],
+                 request.form["anxiety"],
+                 request.form["peer_pressure"],
+                 request.form["chronic_disease"],
                  request.form["fatigue"],
                  request.form["allergy"],
                  request.form["wheezing"],
@@ -26,7 +31,25 @@ def lung():
                  request.form["coughing"],
                  request.form["swallowing_difficulty"],
                  request.form["chest_pain"]]
-      return render_template('lung.html')
+      
+      def transform(features):
+        res=[]
+        for i in features:
+          if i=="yes":
+            res.append(2)
+          elif i=="no":
+            res.append(1)
+        res.append(res[0]*res[1])
+        return res
+      print(features)
+      if len(features)==0:
+        return render_template('lung.html',data="gi")
+      features = transform(features)
+      model = joblib.load('./models/lung_cancer_text/lung_cancer_model.pkl')
+      res = model.predict([features]) 
+      print(res[0])
+
+      return render_template('lung.html',data=res[0])
     else:
       return render_template('lung.html')
 
