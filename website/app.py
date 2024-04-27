@@ -277,7 +277,7 @@ def notification():
       name=request.form["name"]
       num=request.form["num"]
       num=int(num)
-      num-=1
+      num-=1  
       data= {
         'name': name,
         'no of doctors':num
