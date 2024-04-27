@@ -1,0 +1,40 @@
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    
+    background: black;
+}
+
+.logo h1 {
+    color: white;
+    font-size: 24px;
+    font-weight: 700;
+    animation: fadeIn 2s ease; 
+    opacity: 1;
+}
+
+nav ul {
+    list-style-type: none;
+    display: flex;
+    margin: 0;
+    padding: 0;
+}
+
+nav ul li {
+    margin-left: 20px;
+}
+
+nav ul li a {
+    text-decoration: none;
+    color: white;
+    font-size: 16px;
+    padding: 10px;
+    font-weight: 600;
+    animation: fadeIn 2s ease; 
+}
+
+nav ul li a:hover {
+    border-bottom: 2px solid blueviolet;
+}

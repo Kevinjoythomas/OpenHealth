@@ -7,7 +7,13 @@
 <link rel="stylesheet" href="../static/css/lung.css">
 </head>
 <body>
-
+<div class="navbar">
+        <a href="/">Home</a>
+        <a href="#about">About Us</a>
+        <a href="/features">Services</a>
+        <a href="/login">Login</a>
+        <a href="/login">Sign Up</a>
+</div>
 <div class="container">
     <h1>Lung Cancer Evaluation</h1>
     <form id="lungCancerForm" action="/lung" method="POST">
@@ -93,16 +99,27 @@
         </div>
     </form>
     
-    {% if data == 1 %}
-    <div class="res">
-        <h1>And the result for that data is Positive</h1>
+    <input type="checkbox" class="trigger" id="modalTrigger" {% if data!="100" %} checked {% endif %}>
+    
+    <!-- The Modal -->
+    {% if data!=100 %}
+    <div class="modal">
+      <!-- Modal content -->
+      <div class="modal-content" style="text-align:center">
+        <a href="/lung"><span class="close">&times;
+            
+        </span>
+    </a>
+        {% if data == 1 %}
+          <p ><strong>Dignosis: Positive</strong></p>
+        {% elif data == 0 %}
+          <p ><strong>Dignosis: Negataive</strong></p>
+        {% endif %}
+      </div>
     </div>
-    {% elif data == 0 %}
-    <div class="res">
-        <h1>And the result for that data is Negative</h1>
-    </div>
+
     {% endif %}
-</div>
+
 
 </body>
 </html>
