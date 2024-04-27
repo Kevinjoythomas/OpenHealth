@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emergency Notifications</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #f4f4f4;
+        }
+        .container {
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #fff;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .notification, .post-notification-form {
+            padding: 20px;
+            background: #f9f9f9;
+            border: 1px solid #e1e1e1;
+            border-radius: 3px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .notification:last-child, .post-notification-form:last-child {
+            margin-bottom: 0;
+        }
+        .notification p, .post-notification-form h3 {
+            margin: 0;
+            color: #333;
+        }
+        .buttons, .form-fields {
+            display: flex;
+            gap: 10px;
+        }
+        button, input[type='submit'] {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            color: white;
+            font-weight: bold;
+            background-color: #007bff;
+        }
+        button:hover, input[type='submit']:hover {
+            background-color: #0056b3;
+        }
+        .accept {
+            background-color: #4CAF50;
+        }
+        .accept:hover {
+            background-color: #45a049;
+        }
+        .reject {
+            background-color: #f44336;
+        }
+        .reject:hover {
+            background-color: #da190b;
+        }
+        .post-notification {
+            background-color: #6c757d;
+            color: white;
+            text-align: center;
+        }
+        .post-notification:hover {
+            background-color: #5a6268;
+        }
+        .hidden {
+            display: none;
+        }
+        input[type='text'], input[type='number'] {
+            padding: 10px;
+            border: 1px solid #ced4da;
+            border-radius: 3px;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Emergency Notifications</h2>
+
+    <!-- Post Notification Button -->
+    <div class="post-notification">
+        <button id="postNotificationBtn">Post Notification</button>
+    </div>
+
+    <!-- Post Notification Form -->
+    <form method="POST" action="/notifications">
+    <div class="post-notification-form hidden" id="postNotificationForm" >
+        <div class="form-fields">
+            <input type="text" name="name" id="notificationTitle" placeholder="Title of Notification">
+            <input type="number" name="num" id="doctorsNeeded" placeholder="No of Doctors Needed">
+            <input type="submit" value="Submit">
+        </div>
+    </div>
+</form>
+
+    <!-- Existing Notifications -->
+    <!-- Notification 1 -->
+    {% for this in docs %}
+    <div class="notification">
+        <p>{{this._data["name"]}}</p>
+        <div class="buttons">
+            <a href="/accept/{{this._data['name']}}"><button class="accept" >Accept</button></a>
+        </div>
+    </div>
+    {% endfor %}
+
+    <!-- Notification 2 -->
+    <!-- More notifications can be added here -->
+
+</div>
+
+<script>
+    document.getElementById('postNotificationBtn').addEventListener('click', function() {
+        var form = document.getElementById('postNotificationForm');
+        form.classList.toggle('hidden');
+    });
+</script>
+
+</body>
+</html>

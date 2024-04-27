@@ -12,6 +12,21 @@
 	
 	
 	<body>
+		<div class="navbar">
+			<div class="logo">
+				<h1>Open Health</h1>
+			</div>
+			<nav>
+				<ul>
+					<li><a href="/">Home</a></li>
+					<li><a href="#about">About Us</a></li>
+					<li><a href="/features">Services</a></li>
+					<li><a href="/login">Login</a></li>
+					<li><a href="/login">Sign Up</a></li>
+					<li><a href="/ChatBot">Medical ChatBot</a></li>
+				</ul>
+			</nav>
+		</div>
 		<div class="container-fluid h-100">
 			<div class="row justify-content-center h-100">		
 				<div class="col-md-8 col-xl-6 chat">
@@ -23,7 +38,7 @@
 									<span class="online_icon"></span>
 								</div>
 								<div class="user_info">
-									<span>ChatBot</span>
+									<span>Medicial Assistant</span>
 									<p>Ask me anything!</p>
 								</div>
 							</div>
@@ -39,7 +54,8 @@
 						</div>
 						<div class="card-footer">
 							<form id="messageArea" action="/ChatBot" method="post">
-                                <input type="text" id="text" name="prompt" placeholder="Type your message..." class="form-control type_msg" required/>
+                                <input type="text" id="text" name="prompt" placeholder="Type your message..." class="form-control type_msg"/>
+								<button type="submit">voice</button>
 							</form>
 						</div>
 					</div>

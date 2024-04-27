@@ -1,5 +1,5 @@
 # from flask_cors import CORS
-from flask import Flask,render_template,request
+from flask import Flask,render_template,request,redirect
 import pickle
 import sklearn
 import joblib
@@ -14,8 +14,36 @@ from tensorflow.keras.models import load_model
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import imshow,imread
+import firebase_admin
+from firebase_admin import credentials
+from firebase_admin import firestore
+from google.cloud.firestore_v1.base_query import FieldFilter
+import speech_recognition 
+import pyttsx3
 
 
+cred = credentials.Certificate('website/static/secretKey.json')
+firebase_admin.initialize_app(cred)
+db = firestore.client()
+
+
+recognizer = speech_recognition.Recognizer()
+
+def speech_to_bot():
+      with speech_recognition.Microphone() as mic:
+              print("listening")
+              recognizer.adjust_for_ambient_noise(mic,duration=0.2)
+              print("listening")
+                
+              audio = recognizer.listen(mic)
+              print("listening")
+              
+              text = recognizer.recognize_google(audio)
+
+              text = text.lower()
+
+              print(text)
+              return text
 
 def highlight_tumor(image_path):
     model_path = 'models/Brain_Tumor_Segmentation/brain_tumor_segmentation.hdf5'
@@ -121,15 +149,20 @@ def lung():
       temp=[]
       return render_template('lung.html',data=res)
     else:
-      cache['chats']=[]
+      
       return render_template('lung.html',data="100")
 
 @app.route('/brainTumor',methods=["POST","GET"])
 def brain():
    if(request.method=="POST"):
       if 'image' in request.files:
+        print(1)
         image_file = request.files['image']
-
+        image_path = 'website/static/test_images/'+image_file.filename
+        highlight_tumor(image_path)
+      print(2)
+      return render_template("braintumor.html",data=1)
+   
    else:
       return render_template("braintumor.html")
 
@@ -141,5 +174,146 @@ def tesasfasf():
 def features():
    return render_template("features.html")
       
+
+@app.route('/ChatBot',methods=["POST","GET"])
+def ChatBot():
+
+  if(request.method=="POST"):
+    
+    q=request.form['prompt']
+    res=""
+    if len(q)==0:
+      q=speech_to_bot()
+    res = run_conversation(q)
+
+    temp=[]
+    temp.append(q)
+    res = res.split("**")
+    temp=[q,res]
+    cache['chats'].append(temp)
+
+    return render_template('ChatBot.html',data=cache['chats'])
+  else:
+    cache['chats']=[]
+    return render_template('ChatBot.html',data=cache['chats'])
+
+
+@app.route('/diabetes')
+def diabetes():
+  #  pregnencies = request.form['pregnancies']
+  #  glucose = request.form['glucose']
+  #  blood_pressure = request.form['blood_pressure']
+  #  skin_thickness = request.form['skin_thickness']
+  #  insulin = request.form['insulin']
+  #  bmi = request.form['bmi']
+  #  diabetes_pedigree_function = request.form['diabetes_pedigree_function']
+  #  age = request.form['ages']
+
+   return render_template('diabetes.html')
+
+@app.route('/login',methods=["POST","GET"])
+def login():
+   if(request.method=="POST"):
+      print(1)
+      email2=request.form["email"]
+      print(email2)
+      password=request.form["password"]
+      user = db.collection('doctors').where('email', '==', email2).get()
+      print(type(user))
+      if (not user):
+         print(user)
+         print(2)
+         return redirect("/login")
+      else:
+        print(3)
+        user=user[0]
+        user=user._data
+        if(user['password']==password):
+            print(4)
+            return redirect("/features")
+
+        else:
+          print(5)
+          return redirect("/login")
+         
+   else:
+      print(6)
+      return render_template("login.html")
+   
+@app.route('/signup',methods=["POST","GET"])
+def signup():
+   if(request.method=="POST"):
+      print("post")
+      email=request.form["email1"]
+      password=request.form["password1"]
+      name=request.form['name1']
+      specialization=request.form['specialization']
+      user = db.collection('doctors').where('email', '==', email).limit(1).get()
+      if(len(user)!=0):
+         return redirect('/signup')
+      else:
+         data= {
+        'name': name,
+        'email': email,  # Convert to int if needed
+        'password': password,
+        'specialization':specialization
+               }
+         doc=db.collection('doctors').add(data)
+         cache['currentUser']=email
+         print("signin successfully")
+         return redirect('/features')
+   else:
+      return render_template("login.html")
+
+
+   
+         
+
+
+
+@app.route('/notifications',methods=["GET","POST"])
+def notification():
+   if(request.method=='POST'):
+      name=request.form["name"]
+      num=request.form["num"]
+      num=int(num)
+      num-=1
+      data= {
+        'name': name,
+        'no of doctors':num
+               }
+      doc=db.collection('notification').add(data)
+      return redirect('/notifications')
+    
+   else:
+    docs = db.collection('notification').get()
+    print(len(docs))
+    print(docs)
+    return render_template("notifications.html",docs=docs)
+   
+   
+@app.route("/accept/<string:name>", methods=["POST", "GET"])
+def accept(name):
+    # Query the 'notifications' collection for documents with the specified name
+    user_ref = db.collection('notification').where('name', '==', name).get()
+    
+    # Check if any documents were found
+    if user_ref:
+        for doc in user_ref:
+            # Get the current value of the field 'num' from each document
+            current_no_of_doctors = doc._data.get('num', 0)
+            # Increment the value by 1
+            updated_data = {'num': current_no_of_doctors + 1}
+            doc.reference.update(updated_data)
+            
+            # Check if the condition is met to delete the document
+            if doc._data.get("no of doctors") == doc._data.get("num"):
+                doc.reference.delete()
+        
+        # After updating and potentially deleting documents, redirect to another route
+        return redirect('/notifications')
+    else:
+        return "No notifications found for the specified name."
+
 if __name__ == '__main__':
   app.run(debug=True) 

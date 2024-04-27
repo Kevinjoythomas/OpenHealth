@@ -5,18 +5,85 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Image Upload Form</title>
     <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background: #e9ecef;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .form-container {
+            background: #fff;
+            padding: 3rem; /* Increased padding */
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            width: 60%; /* Increased width */
+            max-width: 650px; /* Adjust max-width as needed */
+        }
+
+        .form-header {
+            font-size: 2.5rem; /* Increased font size */
+            text-align: center;
+            color: #333;
+            margin-bottom: 2rem; /* Increased margin */
+        }
+
+        .form-body {
+            margin-bottom: 2rem; /* Increased margin */
+        }
+
+        label {
+            display: block;
+            margin-bottom: .5rem;
+            color: #6c757d;
+        }
+
+        input[type="file"] {
+            border: 1px solid #ced4da;
+            border-radius: .25rem;
+            padding: .75rem; /* Increased padding */
+            display: block;
+            width: 100%;
+            margin-bottom: 1rem;
+        }
+
         #imagePreview {
-            max-width: 300px;
-            max-height: 300px;
+            width: 100%;
+            height: auto;
+            border-radius: .25rem;
+            margin-bottom: 1rem;
+            display: none; /* Set to none to hide initially */
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 1rem; /* Increased padding */
+            border: none;
+            border-radius: .25rem;
+            color: #fff;
+            background-color: #007bff;
+            font-size: 1.2rem; /* Increased font size */
+            cursor: pointer;
+            transition: background-color .15s;
+        }
+
+        .submit-btn:hover {
+            background-color: #0056b3;
         }
     </style>
 </head>
 <body>
+    <div class="navbar">
+
+<div class="form-container">
     <!-- Form Header -->
-    <h2>Upload an Image</h2>
+    <div class="form-header">Upload an Image</div>
     
     <!-- Form Start -->
-    <form action="/brainTumor" method="post" enctype="multipart/form-data">
+    <form action="/brainTumor" method="post" enctype="multipart/form-data" class="form-body">
         <!-- Image Input Field -->
         <label for="image">Select an image:</label>
         <input type="file" id="image" name="image" accept="image/*" onchange="previewImage(event)">
@@ -25,21 +92,28 @@
         <img id="imagePreview" src="#" alt="Image Preview">
         
         <!-- Submit Button -->
-        <input type="submit" value="Upload">
+        <input type="submit" value="Upload" class="submit-btn">
     </form>
     <!-- Form End -->
-    {% if data==1 %}
-    <img id="imageResult" src='../static/results/brain_tumor_result.png' alt="Image Preview">
-    {% endif %}
-    <script>
-        function previewImage(event) {
-            var reader = new FileReader();
-            reader.onload = function() {
-                var imagePreview = document.getElementById('imagePreview');
-                imagePreview.src = reader.result;
-            }
-            reader.readAsDataURL(event.target.files[0]);
-        }
-    </script>
+
+    <!-- Image Result Placeholder (Will be populated by server response) -->
+    <div id="imageResult">
+        {% if data == 1 %}
+        <img src='../static/results/brain_tumor_result.png' alt="Brain Tumor Result" style="width:100%; border-radius: .25rem;">
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    function previewImage(event) {
+        var reader = new FileReader();
+        reader.onload = function() {
+            var output = document.getElementById('imagePreview');
+            output.src = reader.result;
+            output.style.display = 'block'; // Make the image visible
+        };
+        reader.readAsDataURL(event.target.files[0]);
+    }
+</script>
 </body>
 </html>
