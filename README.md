@@ -1,6 +1,6 @@
 # OpenHealth
 This is a Multi-Modal website for doctors that helps in diagnosing and giving them a second opinion. Our platform comprises four advanced AI detection models tailored to different medical domains:
-![Main Page](../OpenHealth/website/static/70005ccc-1764-431e-a9e1-19dfd57f4c7c.jpeg)
+![Main Page](website/static/70005ccc-1764-431e-a9e1-19dfd57f4c7c.jpeg)
 🧠 Brain Tumour Detection Using Image Segmentation: Utilizing cutting-edge image segmentation techniques, this model can accurately identify and localize brain tumors from medical imaging data.
 
 🫁 Lung Disease Detection Using Random Forest: Employing a robust random forest algorithm, this model aids in the early detection and classification of lung diseases based on diverse medical features.
