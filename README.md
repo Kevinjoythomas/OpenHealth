@@ -8,7 +8,7 @@ This is a Multi-Modal website for doctors that helps in diagnosing and giving th
 🩺 Breast Cancer Detection Using SVM: Leveraging support vector machine (SVM) technology, this model offers precise detection and analysis of breast cancer patterns, enhancing early diagnosis and treatment planning.
 
 🩸 Diabetes Detection Using Ensemble Models: By combining multiple predictive models into an ensemble, this tool enables reliable prediction of diabetes risk factors, facilitating proactive management and prevention strategies.
-
+![Main Page](website/static/WhatsApp Image 2024-04-27 at 11.14.35 (4).jpeg)
 Additionally, OpenHealth features a dedicated medical assistant powered by Llama-3, our AI chatbot. Llama-3 is finely tuned to provide personalized assistance to medical professionals, capable of accepting voice inputs and delivering expert advice akin to a doctor's guidance. This feature enhances communication and collaboration between healthcare providers, ensuring efficient patient care.
 
 We also provide a notification section for doctors to ask help from other doctors based on their specialization.
