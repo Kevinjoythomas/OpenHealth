@@ -1,17 +1,51 @@
 # OpenHealth
-This is a Multi-Modal website for doctors that helps in diagnosing and giving them a second opinion. Our platform comprises four AI detection models tailored to different medical domains:
 
-![Main Page](website/static/70005ccc-1764-431e-a9e1-19dfd57f4c7c.jpeg)
-🧠 Brain Tumour Detection Using Image Segmentation: Utilizing cutting-edge image segmentation techniques, this model can accurately identify and localize brain tumors from medical imaging data.
+Welcome to **OpenHealth**, an innovative platform that empowers medical professionals with cutting-edge AI tools to assist in diagnosis, second opinions, and patient care. OpenHealth features a sophisticated **AI-powered chatbot** as its centerpiece, offering a seamless and intelligent experience for doctors and healthcare providers.
 
-🫁 Lung Disease Detection Using Random Forest: Employing a robust random forest algorithm, this model aids in the early detection and classification of lung diseases based on diverse medical features.
+## Key Features
 
-🩺 Breast Cancer Detection Using SVM: Leveraging support vector machine (SVM) technology, this model offers precise detection and analysis of breast cancer patterns, enhancing early diagnosis and treatment planning.
+### **AI Chatbot - The Heart of OpenHealth**
 
-🩸 Diabetes Detection Using Ensemble Models: By combining multiple predictive models into an ensemble, this tool enables reliable prediction of diabetes risk factors, facilitating proactive management and prevention strategies.
+At the core of OpenHealth lies an advanced **AI chatbot**, designed to enhance the decision-making process for medical professionals. This chatbot is fine-tuned using the **LoRA technique** with the **unsloth package**, ensuring an exceptional user experience.
 
-![Main Page](website/static/Bot.jpeg)
+**Key Highlights:**
 
-Additionally, OpenHealth features a dedicated medical assistant powered by Llama-3, our AI chatbot. Llama-3 is finely tuned to provide personalized assistance to medical professionals, capable of accepting voice inputs and delivering expert advice akin to a doctor's guidance. This feature enhances communication and collaboration between healthcare providers, ensuring efficient patient care.
+- **Retrieval-Augmented Generation (RAG):** The chatbot leverages RAG to pull relevant information from **21 carefully curated PDFs**, ensuring that responses are accurate, detailed, and up-to-date.
+- **Context-Aware Conversations:** It tracks and stores chat history, allowing continuous, meaningful dialogues and enabling context-sensitive responses.
+- **Fast Response Time:** With an impressive **average response time of 42 seconds**, powered by the **LangChain framework**, the chatbot provides efficient, real-time assistance.
 
-We also provide a notification section for doctors to ask help from other doctors based on their specialization.
+![AI Chatbot](website/static/Bot.jpeg)
+
+---
+
+### **Medical AI Models for Diagnosis and Second Opinions**
+
+OpenHealth is not just a chatbot. It also integrates four sophisticated AI detection models tailored to different medical domains, assisting doctors in making accurate diagnoses and providing second opinions with confidence.
+
+#### 🧠 **Brain Tumor Detection Using Image Segmentation**
+
+This state-of-the-art model utilizes **advanced image segmentation techniques** to detect and localize **brain tumors** from medical imaging data. It provides accurate results, aiding in early diagnosis and treatment planning.
+
+#### 🫁 **Lung Disease Detection Using Random Forest**
+
+Leveraging the **Random Forest algorithm**, this model assists in the **early detection and classification** of lung diseases by analyzing diverse medical features. It helps in identifying critical conditions, leading to timely medical interventions.
+
+#### 🩺 **Breast Cancer Detection Using SVM**
+
+This powerful model uses **Support Vector Machine (SVM)** technology to detect and analyze **breast cancer** patterns. It enables doctors to make accurate assessments, improving early diagnosis and guiding treatment decisions.
+
+#### 🩸 **Diabetes Detection Using Ensemble Models**
+
+By combining multiple predictive models into an **ensemble**, this model enhances the prediction of **diabetes risk factors**, enabling doctors to identify early symptoms and implement proactive management and prevention strategies.
+
+![Medical Models](website/static/70005ccc-1764-431e-a9e1-19dfd57f4c7c.jpeg)
+
+---
+
+### **Notification System for Doctor Collaboration**
+
+OpenHealth also features a **dedicated notification system** that allows doctors to reach out to their peers based on specialization. This feature encourages **collaboration** among medical professionals, ensuring that every patient receives the best possible care through consultation and shared expertise.
+
+---
+
+OpenHealth is designed to help doctors provide the best care possible, enhancing diagnosis accuracy and treatment efficiency with the power of artificial intelligence.
