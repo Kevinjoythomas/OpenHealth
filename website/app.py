@@ -46,7 +46,7 @@ You are a medical professional. Answer the question like a doctor would. It shou
 Answer the question based on your knowledge and using the above context for help: {question}
 """
 
-cred = credentials.Certificate('./static/secretKey.json')
+cred = credentials.Certificate(os.getenv('firebase_secretkey'))
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 embedding_function = OllamaEmbeddings(model="nomic-embed-text")
