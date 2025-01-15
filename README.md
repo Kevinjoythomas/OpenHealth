@@ -4,9 +4,9 @@ Welcome to **OpenHealth**, an innovative platform that empowers medical professi
 
 ## Key Features
 
-### **AI Chatbot - The Heart of OpenHealth**
+### **AI Chatbot - The Heart of OpenHealth** [Model link](https://huggingface.co/kevinjoythomas/medical-loratuned-chatbot-GGUF)
 
-At the core of OpenHealth lies an advanced **AI chatbot**, designed to enhance the decision-making process for medical professionals. This chatbot is fine-tuned using the **LoRA technique** with the **unsloth package**, ensuring an exceptional user experience.
+At the core of OpenHealth lies an advanced **AI chatbot**, designed to enhance the decision-making process for medical professionals and paitents. This chatbot is **LoRA fine-tuned**  with the **unsloth package**, on a **Dataset of 112,000 Rows** ensuring an exceptional user experience.
 
 **Key Highlights:**
 
