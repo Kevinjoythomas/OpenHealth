@@ -51,7 +51,8 @@ firebase_admin.initialize_app(cred)
 db = firestore.client()
 embedding_function = OllamaEmbeddings(model="nomic-embed-text")
 chroma_db = Chroma(persist_directory=CHROMA_PATH, embedding_function=embedding_function)
-llama_model = OllamaLLM(model="hf.co/srikar-v05/Llama3-Medical-Chat-GGUF")
+llama_model = OllamaLLM(model="hf.co/kevinjoythomas/medical-loratuned-chatbot-GGUF")
+
 
 
 # recognizer = speech_recognition.Recognizer()
