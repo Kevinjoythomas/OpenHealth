@@ -1,66 +1,121 @@
-<link href="//maxcdn.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css" rel="stylesheet" id="bootstrap-css">
-<script src="//maxcdn.bootstrapcdn.com/bootstrap/4.1.1/js/bootstrap.min.js"></script>
-
 <!DOCTYPE html>
-<html>
-	<head>
-		<title>Chatbot</title>
-		<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
-		<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css" integrity="sha384-B4dIYHKNBt8Bc12p+WXckhzcICo0wtJAoU8YZTY5qE0Id1GSseTk6S+L3BlXeVIU" crossorigin="anonymous">
-		<link rel="stylesheet" type="text/css" href="../static/css/ChatBot.css"/>
-	</head>
-	
-	
-	<body>
-		<div class="navbar">
-			<div class="logo">
-				<h1>Open Health</h1>
-			</div>
-			<nav>
-				<ul>
-					<li><a href="/">Home</a></li>
-					<li><a href="#about">About Us</a></li>
-					<li><a href="/features">Services</a></li>
-					<li><a href="/login">Login</a></li>
-					<li><a href="/login">Sign Up</a></li>
-					<li><a href="/ChatBot">Medical ChatBot</a></li>
-				</ul>
-			</nav>
-		</div>
-		<div class="container-fluid h-100">
-			<div class="row justify-content-center h-100">		
-				<div class="col-md-8 col-xl-6 chat">
-					<div class="card">
-						<div class="card-header msg_head">
-							<div class="d-flex bd-highlight">
-								<div class="img_cont">
-									<img src="../static/doctor.png" rounded-circle user_img style="background-color: rgb(156, 156, 232);" width="50" height="50">
-									<span class="online_icon"></span>
-								</div>
-								<div class="user_info">
-									<span>Medicial Assistant</span>
-									<p>Ask me anything!</p>
-								</div>
-							</div>
-						</div>
-						<div id="messageFormeight" class="card-body msg_card_body">
-							{% for q,r in data%}
-								<p style="color: aliceblue">{{q}}</p>
-								{% for i in r %}
-								<p style="color: aliceblue">{{i}}</p>
-								{% endfor %}
-							{% endfor %}
-							
-						</div>
-						<div class="card-footer">
-							<form id="messageArea" action="/ChatBot" method="post">
-                                <input type="text" id="text" name="prompt" placeholder="Type your message..." class="form-control type_msg"/>
-								<button type="submit">voice</button>
-							</form>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medical ChatBot - Open Health</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css" integrity="sha384-B4dIYHKNBt8Bc12p+WXckhzcICo0wtJAoU8YZTY5qE0Id1GSseTk6S+L3BlXeVIU" crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="../static/css/ChatBot.css"/>
+    <style>
+        body {
+            background-color: rgba(12, 12, 12, 0.68);
+        }
+        .chat {
+            margin-top: 50px;
+        }
+        .card {
+            border-radius: 15px;
+            box-shadow:rgb(255, 0, 0);
+        }
+        .msg_head {
+            background-color:#00897B;
+            color: white;
+            padding: 15px;
+            border-top-left-radius: 15px;
+            border-top-right-radius: 15px;
+        }
+        .img_cont img {
+            border-radius: 50%;
+            border: 2px solid white;
+        }
+        .msg_card_body {
+            overflow-y: auto;
+            height: 400px;
+            background-color:rgb(255, 255, 255);
+            padding: 10px;
+        }
+        .msg_card_body p {
+            margin: 5px 0;
+        }
+        .type_msg {
+            border: none;
+            border-radius: 30px;
+            padding: 10px 20px;
+        }
+        .send_btn {
+            background-color:rgba(78, 74, 74, 0.33);
+            border: none;
+            color: white;
+            border-radius: 30px;
+            padding: 10px 20px;
+            cursor: pointer;
+        }
+        .send_btn:hover {
+            background-color:#00897B;
+        }
 		
+    </style>
+</head>
+<body>
+    <div class="navbar d-flex justify-content-between align-items-center">
+        <div class="logo">
+            <h1>Open Health</h1>
+        </div>
+        <nav>
+            <ul class="d-flex">
+                <li><a href="/">Home</a></li>
+                <li><a href="#about">About Us</a></li>
+                <li><a href="/features">Services</a></li>
+                <li><a href="/login">Login</a></li>
+                <li><a href="/signup">Sign Up</a></li>
+                <li><a href="/ChatBot">Medical ChatBot</a></li>
+            </ul>
+        </nav>
+    </div>
+
+    <div class="container-fluid h-100">
+        <div class="row justify-content-center h-100">
+            <div class="col-md-8 col-xl-6 chat">
+                <div class="card">
+                    <div class="card-header msg_head">
+                        <div class="d-flex bd-highlight">
+                            <div class="img_cont">
+                                <img src="../static/doctor.png" alt="Doctor Avatar" class="user_img" width="50" height="50">
+                            </div>
+                            <div class="user_info ml-3">
+                                <h4>Personal Doctor</h4>
+                                <h8>How can I assist with your health today?!</h8>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="messageFormeight" class="card-body msg_card_body">
+                        {% for q, r in data %}
+                            <div>
+                                <p class="text-primary font-weight-bold">You:</p>
+                                <p>{{ q }}</p>
+                            </div>
+                            {% for i in r %}
+                                <div>
+                                    <p class="text-success font-weight-bold">Doctor:</p>
+                                    <p>{{ i }}</p>
+                                </div>
+                            {% endfor %}
+                        {% endfor %}
+                    </div>
+                    <div class="card-footer d-flex align-items-center">
+                        <form id="messageArea" action="/ChatBot" method="post" class="d-flex w-100">
+                            <input type="text" id="text" name="prompt" placeholder="Type your message..." class="form-control type_msg" required>
+                            <button type="submit" class="send_btn ml-3"><i class="fas fa-paper-plane"></i> Send</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGaHWj9t9JJVOgqDAeGSIebh3D" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIyOA8V2+5RXj1zAqN3E8qRIpzn+E8Qblp1WZX7M" crossorigin="anonymous"></script>
+</body>
 </html>
