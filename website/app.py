@@ -1,5 +1,5 @@
 # from flask_cors import CORS
-from flask import Flask,render_template,request,redirect
+from flask import Flask,render_template,request,redirect, sessions, url_for, session
 import pickle
 import sklearn
 import joblib
@@ -12,44 +12,74 @@ import re
 import cv2
 from tensorflow.keras.models import load_model
 import numpy as np
+import matplotlib
+matplotlib.use('Agg') 
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import imshow,imread
 import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import firestore
 from google.cloud.firestore_v1.base_query import FieldFilter
-import speech_recognition 
-import pyttsx3
+from langchain_ollama import OllamaLLM
+from langchain_community.embeddings.ollama import OllamaEmbeddings
+from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_ollama import OllamaEmbeddings
+from langchain_chroma import Chroma
+from langchain.chains.combine_documents import create_stuff_documents_chain
+from langchain.chains import create_history_aware_retriever,create_retrieval_chain
+from langchain_community.chat_message_histories import ChatMessageHistory
+from langchain_core.chat_history import BaseChatMessageHistory
+from langchain_core.runnables.history import RunnableWithMessageHistory
 
 
-cred = credentials.Certificate('website/static/secretKey.json')
+
+# import speech_recognition 
+# import pyttsx3
+CHROMA_PATH = "./chroma"
+PROMPT_TEMPLATE = """
+You are a medical professional. Answer the question like a doctor would. It should consist of paragraph and conversational aspect rather than just a summary. Answer the asked question to the point briefly and dont make up stuff. Answer in a professional tone:
+
+{context}
+
+---
+
+Answer the question based on your knowledge and using the above context for help: {question}
+"""
+
+cred = credentials.Certificate('./static/secretKey.json')
 firebase_admin.initialize_app(cred)
 db = firestore.client()
+embedding_function = OllamaEmbeddings(model="nomic-embed-text")
+chroma_db = Chroma(persist_directory=CHROMA_PATH, embedding_function=embedding_function)
+llama_model = OllamaLLM(model="hf.co/srikar-v05/Llama3-Medical-Chat-GGUF")
 
 
-recognizer = speech_recognition.Recognizer()
+# recognizer = speech_recognition.Recognizer()
 
-def speech_to_bot():
-      with speech_recognition.Microphone() as mic:
-              print("listening")
-              recognizer.adjust_for_ambient_noise(mic,duration=0.2)
-              print("listening")
+# def speech_to_bot():
+#       with speech_recognition.Microphone() as mic:
+#               print("listening")
+#               recognizer.adjust_for_ambient_noise(mic,duration=0.2)
+#               print("listening")
                 
-              audio = recognizer.listen(mic)
-              print("listening")
+#               audio = recognizer.listen(mic)
+#               print("listening")
               
-              text = recognizer.recognize_google(audio)
+#               text = recognizer.recognize_google(audio)
 
-              text = text.lower()
+#               text = text.lower()
 
-              print(text)
-              return text
+#               print(text)
+#               return text
 
-def highlight_tumor(image_path):
-    model_path = 'models/Brain_Tumor_Segmentation/brain_tumor_segmentation.hdf5'
+def highlight_tumor(image):
+    org_img = image
+    model_path = '../models/Brain_Tumor_Segmentation/brain_tumor_segmentation.hdf5'
     model = load_model(model_path, compile=False)
-    image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
     image = cv2.resize(image, (256, 256))
+    if len(image.shape) == 3 and image.shape[-1] == 3:
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
     image = image / 255.0
 
     image = np.expand_dims(image, axis=(0, -1))
@@ -59,7 +89,7 @@ def highlight_tumor(image_path):
     threshold = 0.5
     mask_binary = (mask > threshold).astype(np.uint8)
 
-    original_image_rgb = cv2.cvtColor(cv2.imread(image_path), cv2.COLOR_BGR2RGB)
+    original_image_rgb = cv2.cvtColor(org_img, cv2.COLOR_BGR2RGB)
 
     highlight_mask_resized = cv2.resize(mask_binary[0], (original_image_rgb.shape[1], original_image_rgb.shape[0]))
 
@@ -73,37 +103,111 @@ def highlight_tumor(image_path):
     plt.imshow(highlighted_image)
     plt.title('Highlighted Tumor')
     plt.axis('off')
-    plt.savefig('website/static/results/brain_tumor_result.png')
-
+    plt.savefig('./static/results/brain_tumor_result.png')
+    plt.close()
     
 
 app = Flask(__name__)
 # cors = CORS(app,resources={r'/*':{'origin':'*'}})ṇ
+app.secret_key = os.getenv('FLASK_SECRET_KEY', 'default_secret_key')
 
 cache={'chats':[]}
+session_id = "session"
+count = 0
+sessions = {}
 
-client = Groq(api_key = "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")
-MODEL = 'llama3-70b-8192'
-def run_conversation(user_prompt):
-    # Step 1: send the conversation and available functions to the model
-    messages=[
-        {
-            "role": "system",
-            "content": "Your primary role is to assist doctors by providing concise and accurate information only related to helping a doctor in their work.Answer should be in a form like you're texting a person. Refuse to answer questions on any other topic other than hospital work. This includes, but is not limited to, diagnosing medical conditions based on symptoms, suggesting potential treatment plans, and providing general medical information. Please note that while you strive to provide reliable information, your responses should not replace professional medical advice."
-        },
-        {
-            "role": "user",
-            "content": user_prompt,
-        }
-    ]
-    response = client.chat.completions.create(
-        model=MODEL,
-        messages=messages,
-        tool_choice="auto",  
-        max_tokens=4096
-    )
-    response_message = response.choices[0].message.content
-    return response_message 
+def get_session_history(session:str)->BaseChatMessageHistory:
+    if session_id not in sessions:
+        sessions[session_id] = ChatMessageHistory()
+    return sessions[session_id]
+  
+def run_conversation(user_prompt:str):
+    try:
+        
+
+        # print("Chroma DB initialized successfully.", len(chroma_db.get()), flush=True)
+
+        # try:
+        #     results = chroma_db.similarity_search(user_prompt, k=1)
+        # except MemoryError:
+        #     print("MemoryError occurred while performing similarity search.")
+            
+        # print("Similarity search results:", results, flush=True)
+
+        # context_text = "\n\n---\n\n".join([doc.page_content for doc in results])
+        # prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
+        # prompt = prompt_template.format(context=context_text, question=user_prompt)
+        # print("Prompt created:", prompt, flush=True)
+
+        # response = llama_model.invoke(prompt)
+        # print("Model Response:", response, flush=True)
+        retriever = chroma_db.as_retriever(
+            search_type="mmr",  
+            top_k=2             
+        )
+        print("prompt asked is",user_prompt)
+        contextualize_q_system_prompt=(
+                    "Given a chat history and the latest user question"
+                    "which might reference context in the chat history, "
+                    "formulate a standalone question which can be understood "
+                    "without the chat history. Do NOT answer the question, "
+                    "just reformulate it if needed and otherwise return it as is."
+                )
+        
+        contextualize_q_prompt = ChatPromptTemplate.from_messages(
+            [
+                ("system",contextualize_q_system_prompt),
+                MessagesPlaceholder("chat_history"),
+                ("human","{input}"),
+            ]
+        )
+        history_aware_retriever = create_history_aware_retriever(llama_model,retriever,contextualize_q_prompt)
+        system_prompt = (
+            "You are a highly experienced medical professional who have been communicating with a patient via text. Your role is to provide clear, concise, and empathetic advice based on the patient's concerns, as you cannot perform physical examinations remotely. Maintain a professional and approachable tone, similar to a doctor conversing with a patient in a hospital. Engage in a conversational manner rather than offering dry summaries."
+            "\n\n"
+            "Your primary goals are:"
+            "1. To provide accurate medical advice or guidance based on the given context."
+            "2. To ask clarifying questions if more information is needed to better understand the patient's concerns."
+            "3. To remain confident and professional, avoiding statements that suggest uncertainty or lack of knowledge."
+            "\n\n"
+            "{context}"
+            "\n\n"
+            "Use the information above ONLY if it is related to the question and your medical expertise to craft responses tailored to the patient's needs. Ensure the advice is consice and relevant to the context provided and NEVER ask them to meet any other medical proffesional for help. If you dont know something just ask them more questions about it or say you dont know but NEVER EVER tell them to consult a doctor in person they already know of that option."
+        )
+
+        
+        qa_prompt = ChatPromptTemplate.from_messages(
+          [
+              ("system",system_prompt),
+              MessagesPlaceholder("chat_history"),
+              ("human","{input}")
+          ]
+        )
+        
+        question_answer_chain = create_stuff_documents_chain(llama_model,qa_prompt)
+        rag_chain = create_retrieval_chain(history_aware_retriever,question_answer_chain)
+        conversational_rag_chain = RunnableWithMessageHistory(
+            rag_chain,get_session_history,
+            input_messages_key="input",
+            history_messages_key = "chat_history",
+            output_messages_key = "answer"
+        )
+        response  = conversational_rag_chain.invoke(
+            {"input":user_prompt},
+            config={
+                "configurable":{"session_id":session_id}
+            }
+        )
+        print("Response is",response['answer'])
+        return response["answer"]
+
+    except Exception as e:
+        import traceback
+        print(f"Error in query: {e}", flush=True)
+        print(traceback.format_exc(), flush=True)
+        return f"Error processing request: {e}"
+      
+      
 @app.route('/')
 def test():
     return render_template('index.html')
@@ -142,7 +246,7 @@ def lung():
       if len(features)==0:
         return render_template('lung.html',data="100")
       features = transform(features)
-      model = joblib.load('./models/lung_cancer_text/lung_cancer_model.pkl')
+      model = joblib.load('../models/lung_cancer_text/lr_cr_model_latest.pkl')
       res = model.predict([features]) 
       res = int(res[0])
       print(res)
@@ -158,8 +262,15 @@ def brain():
       if 'image' in request.files:
         print(1)
         image_file = request.files['image']
-        image_path = 'website/static/test_images/'+image_file.filename
-        highlight_tumor(image_path)
+        if image_file.filename == '':
+            return "No selected file!", 400
+        file_bytes = np.frombuffer(image_file.read(), np.uint8)
+
+        image = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
+        if image is None:
+            return "Invalid image format!", 400
+
+        highlight_tumor(image)
       print(2)
       return render_template("braintumor.html",data=1)
    
@@ -175,27 +286,33 @@ def features():
    return render_template("features.html")
       
 
-@app.route('/ChatBot',methods=["POST","GET"])
+@app.route('/ChatBot', methods=["POST", "GET"])
 def ChatBot():
+    if 'chats' not in session:
+        session['chats'] = []
+    if request.method == "POST":
+        q = request.form['prompt']
+        q = str(q)
 
-  if(request.method=="POST"):
-    
-    q=request.form['prompt']
-    res=""
-    if len(q)==0:
-      q=speech_to_bot()
-    res = run_conversation(q)
+        # Get response from the bot
+        res = run_conversation(q)
 
-    temp=[]
-    temp.append(q)
-    res = res.split("**")
-    temp=[q,res]
-    cache['chats'].append(temp)
+        res = re.split(r'\*\*|\*', res)
+        
+        temp = [q, res]
+        chats = session['chats']  # Get the current list of chats
+        chats.append(temp)
+        session['chats'] = chats
 
-    return render_template('ChatBot.html',data=cache['chats'])
-  else:
-    cache['chats']=[]
-    return render_template('ChatBot.html',data=cache['chats'])
+        return render_template('ChatBot.html', data=session['chats'])
+    else:    
+      global count
+      count += 1
+      global session_id
+      session_id = session_id[:-1]
+      session_id = session_id+str(count)
+      session['chats'] = []
+      return render_template('ChatBot.html', data=[])
 
 
 @app.route('/diabetes')
@@ -218,6 +335,7 @@ def login():
       email2=request.form["email"]
       print(email2)
       password=request.form["password"]
+      print(password)
       user = db.collection('doctors').where('email', '==', email2).get()
       print(type(user))
       if (not user):
@@ -242,21 +360,28 @@ def login():
    
 @app.route('/signup',methods=["POST","GET"])
 def signup():
+  
    if(request.method=="POST"):
       print("post")
       email=request.form["email1"]
+      print(email)
       password=request.form["password1"]
+      print(password)
       name=request.form['name1']
-      specialization=request.form['specialization']
+      print(name)
+      docs = db.collection('doctors').get()
+      for doc in docs:
+          print(doc.id, doc.to_dict())
       user = db.collection('doctors').where('email', '==', email).limit(1).get()
       if(len(user)!=0):
          return redirect('/signup')
       else:
+         print("saving data")
+        
          data= {
         'name': name,
         'email': email,  # Convert to int if needed
         'password': password,
-        'specialization':specialization
                }
          doc=db.collection('doctors').add(data)
          cache['currentUser']=email
@@ -316,4 +441,4 @@ def accept(name):
         return "No notifications found for the specified name."
 
 if __name__ == '__main__':
-  app.run(debug=True) 
+    app.run(host='0.0.0.0', port=5000,threaded=False,debug=True)
