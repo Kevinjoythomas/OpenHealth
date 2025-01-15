@@ -14,7 +14,7 @@ At the core of OpenHealth lies an advanced **AI chatbot**, designed to enhance t
 - **Context-Aware Conversations:** It tracks and stores chat history, allowing continuous, meaningful dialogues and enabling context-sensitive responses.
 - **Fast Response Time:** With an impressive **average response time of 42 seconds**, powered by the **LangChain framework**, the chatbot provides efficient, real-time assistance.
 
-![AI Chatbot](website/static/Bot.jpeg)
+![AI Chatbot](https://github.com/Kevinjoythomas/OpenHealth/blob/main/website/static/repo_images/chatbot.png)
 
 ---
 
