@@ -1,2 +1,2 @@
-./website/static/secretKey.json
-./website/.env
+website/static/secretKey.json
+website/.env
