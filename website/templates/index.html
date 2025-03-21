@@ -2,35 +2,390 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Open Health</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="../static/css/land.css">
+    <title>MediConnect</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css" integrity="sha512-KfkfwYDsLkIlwQp6LFnl8zNdLGxu9YAA1QvwINks4PhcElQSvqcyVLLD9aMhXd13uQjoXtEKNosOWaZqXgel0g==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        /* Base Styles */
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+        
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body, html {
+            margin: 0;
+            padding: 0;
+            font-family: 'Poppins', sans-serif;
+            background-image: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('https://images.unsplash.com/photo-1551601651-2a8555f1a136?q=80&w=2047&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        /* Navbar Styles */
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 50px;
+            background: rgba(0, 0, 0, 0.8);
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+        
+        .logo h1 {
+            color: white;
+            font-size: 24px;
+            font-weight: 700;
+            animation: fadeIn 2s ease;
+            margin: 0;
+        }
+        
+        nav ul {
+            list-style-type: none;
+            display: flex;
+            margin: 0;
+            padding: 0;
+        }
+        
+        nav ul li {
+            margin-left: 30px;
+        }
+        
+        nav ul li a {
+            text-decoration: none;
+            color: white;
+            font-size: 16px;
+            padding: 10px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        nav ul li a:after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: 0;
+            left: 0;
+            background-color: #6c63ff;
+            transition: width 0.3s ease;
+        }
+        
+        nav ul li a:hover:after {
+            width: 100%;
+        }
+        
+        /* Hero Section */
+        .hero {
+            text-align: center;
+            padding: 150px 20px 100px;
+            color: white;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .hero h2 {
+            font-size: 50px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            animation: fadeIn 2s ease;
+        }
+        
+        .hero h3 {
+            font-size: 30px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            animation: fadeIn 2.5s ease;
+            color: #6c63ff;
+        }
+        
+        .hero p {
+            font-size: 20px;
+            font-weight: 400;
+            margin-bottom: 30px;
+            animation: fadeIn 3s ease;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .hero .explore-more {
+            font-size: 16px;
+            padding: 12px 30px;
+            background-color: #6c63ff;
+            color: white;
+            border: none;
+            border-radius: 30px;
+            font-weight: 600;
+            cursor: pointer;
+            text-transform: uppercase;
+            animation: fadeIn 3.5s ease;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(108, 99, 255, 0.5);
+        }
+        
+        .hero .explore-more:hover {
+            background-color: #5a52e0;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(108, 99, 255, 0.7);
+        }
+        
+        /* Features Section */
+        .features {
+            background-color: white;
+            padding: 80px 20px;
+        }
+        
+        .features-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .features-heading {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+        
+        .features-heading h2 {
+            font-size: 36px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 15px;
+        }
+        
+        .features-heading p {
+            color: #666;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 40px;
+        }
+        
+        .feature-item {
+            background-color: #f9f9f9;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            text-align: center;
+            transition: all 0.3s ease;
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        
+        .feature-item.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .feature-item:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+        
+        .feature-icon {
+            font-size: 40px;
+            color: #6c63ff;
+            margin-bottom: 20px;
+        }
+        
+        .feature-item h3 {
+            font-size: 22px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        .feature-item p {
+            color: #666;
+            font-size: 15px;
+        }
+        
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes slideInLeft {
+            from { 
+                transform: translateX(-100px);
+                opacity: 0;
+            }
+            to { 
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        @keyframes slideInRight {
+            from { 
+                transform: translateX(100px);
+                opacity: 0;
+            }
+            to { 
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .navbar {
+                padding: 15px 20px;
+            }
+            
+            .logo h1 {
+                font-size: 20px;
+            }
+            
+            nav ul li {
+                margin-left: 15px;
+            }
+            
+            nav ul li a {
+                font-size: 14px;
+            }
+            
+            .hero h2 {
+                font-size: 36px;
+            }
+            
+            .hero h3 {
+                font-size: 24px;
+            }
+            
+            .hero p {
+                font-size: 16px;
+            }
+            
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 </head>
 <body>
-    <header>
-        <div class="navbar">
-            <div class="logo">
-                <h1>Open Health</h1>
+    <!-- Navbar -->
+    <div class="navbar">
+        <div class="logo">
+            <h1>MediConnect</h1>
+        </div>
+        <nav>
+            <ul>
+              <li><a href="/">Home</a></li>
+              <li><a href="#about">About Us</a></li>
+              <li><a href="/features">Services</a></li>
+              <li><a href="/login">Login</a></li>
+              <li><a href="/login">Sign Up</a></li>
+              <li><a href="/ChatBot">Medical ChatBot</a></li>
+            </ul>
+        </nav>
+    </div>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <h2>Welcome to MediConnect</h2>
+        <h3>Connecting Patients with Specialists</h3>
+        <p>Our platform helps patients find the right medical specialists quickly and easily. We prioritize your health by connecting you with expert doctors across multiple specializations.</p>
+        <a href="/login"><button class="explore-more">Explore More</button></a>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features">
+        <div class="features-container">
+            <div class="features-heading">
+                <h2>Why Choose MediConnect</h2>
+                <p>Our platform offers a comprehensive suite of features designed to make healthcare more accessible and efficient.</p>
             </div>
-            <nav>
-                <ul>
-                    <li><a href="/">Home</a></li>
-                    <li><a href="#about">About Us</a></li>
-                    <li><a href="/features">Services</a></li>
-                    <li><a href="/login">Login</a></li>
-                    <li><a href="/login">Sign Up</a></li>
-                    <li><a href="/ChatBot">Medical ChatBot</a></li>
-                </ul>
-            </nav>
+            <div class="features-grid">
+                <div class="feature-item">
+                    <div class="feature-icon">
+                        <i class="fas fa-user-md"></i>
+                    </div>
+                    <h3>Expert Specialists</h3>
+                    <p>Connect with verified medical specialists across various fields of expertise to address your specific health concerns.</p>
+                </div>
+                
+                <div class="feature-item">
+                    <div class="feature-icon">
+                        <i class="fas fa-calendar-check"></i>
+                    </div>
+                    <h3>Easy Scheduling</h3>
+                    <p>Book appointments with your preferred doctors quickly with our intuitive scheduling system.</p>
+                </div>
+                
+                <div class="feature-item">
+                    <div class="feature-icon">
+                        <i class="fas fa-laptop-medical"></i>
+                    </div>
+                    <h3>Virtual Consultations</h3>
+                    <p>Get medical advice from the comfort of your home through secure video consultations.</p>
+                </div>
+                
+                <div class="feature-item">
+                    <div class="feature-icon">
+                        <i class="fas fa-file-medical-alt"></i>
+                    </div>
+                    <h3>Medical Records</h3>
+                    <p>Securely store and share your medical history and records with authorized healthcare providers.</p>
+                </div>
+                
+                <div class="feature-item">
+                    <div class="feature-icon">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <h3>Privacy Protection</h3>
+                    <p>Your personal and medical information is protected with industry-leading security measures.</p>
+                </div>
+                
+                <div class="feature-item">
+                    <div class="feature-icon">
+                        <i class="fas fa-comments"></i>
+                    </div>
+                    <h3>24/7 Support</h3>
+                    <p>Our dedicated support team is available around the clock to assist with any questions or concerns.</p>
+                </div>
+            </div>
         </div>
-        <div class="hero">
-            <h2>Expert Medical Insights</h2>
-            <h3>Enhance Your Practice with AI</h3>
-            <p>Empowering doctors with AI-driven second opinions.</p>
-            <a href="/login"><button class="explore-more">Explore More</button></a>
-        </div>
-    </header>
-    <script src="script.js"></script>
+    </section>
+
+    <script>
+        // Animate feature items on scroll
+        document.addEventListener('DOMContentLoaded', function() {
+            const featureItems = document.querySelectorAll('.feature-item');
+            
+            function checkScroll() {
+                featureItems.forEach((item, index) => {
+                    const itemPosition = item.getBoundingClientRect().top;
+                    const screenPosition = window.innerHeight / 1.3;
+                    
+                    if (itemPosition < screenPosition) {
+                        // Add staggered delay to create a cascade effect
+                        setTimeout(() => {
+                            item.classList.add('show');
+                        }, 150 * index);
+                    }
+                });
+            }
+            
+            window.addEventListener('scroll', checkScroll);
+            checkScroll(); // Initial check
+        });
+    </script>
 </body>
 </html>
