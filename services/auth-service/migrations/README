@@ -1,0 +1,7 @@
+Alembic migrations for auth-service.
+
+To generate a new migration after changing models:
+    alembic revision --autogenerate -m "describe change"
+
+To apply migrations:
+    alembic upgrade head

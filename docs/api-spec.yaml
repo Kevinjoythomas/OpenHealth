@@ -1,0 +1,597 @@
+openapi: "3.0.3"
+info:
+  title: OpenHealth API
+  description: |
+    Medical chat platform API. All requests are made through the API gateway
+    (default port 5000). Auth endpoints are public; all other endpoints require
+    a Bearer JWT in the Authorization header.
+  version: "1.0.0"
+  contact:
+    name: OpenHealth Team
+
+servers:
+  - url: http://localhost:5000/v1
+    description: Local development (via API gateway)
+
+# ── Security ──────────────────────────────────────────────────────────────────
+securitySchemes:
+  bearerAuth:
+    type: http
+    scheme: bearer
+    bearerFormat: JWT
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    # ── Auth ──────────────────────────────────────────────────────────────────
+    SignupRequest:
+      type: object
+      required: [email, password, name]
+      properties:
+        email:
+          type: string
+          format: email
+          example: doctor@hospital.com
+        password:
+          type: string
+          minLength: 8
+          example: securepass123
+        name:
+          type: string
+          example: Dr Jane Smith
+        role:
+          type: string
+          enum: [doctor, patient, admin]
+          default: doctor
+        specialization:
+          type: string
+          nullable: true
+          example: Cardiology
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+
+    TokenResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+        token_type:
+          type: string
+          example: bearer
+
+    RefreshRequest:
+      type: object
+      required: [refresh_token]
+      properties:
+        refresh_token:
+          type: string
+
+    UserProfile:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        role:
+          type: string
+          enum: [doctor, patient, admin]
+        specialization:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+
+    # ── Chat ──────────────────────────────────────────────────────────────────
+    CreateSessionRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          nullable: true
+          example: Morning consultation
+
+    ChatSession:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+        title:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    SendMessageRequest:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+          example: I have a persistent headache and mild fever.
+
+    SendMessageResponse:
+      type: object
+      properties:
+        session_id:
+          type: string
+          format: uuid
+        answer:
+          type: string
+          example: Based on your symptoms, this could be a tension headache...
+
+    ChatMessage:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        session_id:
+          type: string
+          format: uuid
+        role:
+          type: string
+          enum: [user, assistant]
+        content:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    # ── Ingestion ─────────────────────────────────────────────────────────────
+    IngestDocumentRequest:
+      type: object
+      required: [s3_key]
+      properties:
+        s3_key:
+          type: string
+          example: uploads/backpain.pdf
+        filename:
+          type: string
+          example: backpain.pdf
+
+    IngestDocumentResponse:
+      type: object
+      properties:
+        task_id:
+          type: string
+        status:
+          type: string
+          example: queued
+
+    # ── Retrieval ─────────────────────────────────────────────────────────────
+    RetrieveRequest:
+      type: object
+      required: [query]
+      properties:
+        query:
+          type: string
+          example: symptoms of chest pain
+        top_k:
+          type: integer
+          minimum: 1
+          maximum: 20
+          default: 5
+
+    RetrieveResponse:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            type: object
+            properties:
+              content:
+                type: string
+              metadata:
+                type: object
+              score:
+                type: number
+                nullable: true
+        count:
+          type: integer
+
+    # ── Common ────────────────────────────────────────────────────────────────
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+
+    Health:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [ok, ready, degraded, not ready]
+        service:
+          type: string
+
+# ── Paths ─────────────────────────────────────────────────────────────────────
+paths:
+
+  # ── Health ──────────────────────────────────────────────────────────────────
+  /health:
+    get:
+      summary: Liveness check
+      operationId: getHealth
+      tags: [Health]
+      responses:
+        "200":
+          description: Service is alive
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+
+  /health/ready:
+    get:
+      summary: Readiness check (verifies downstream dependencies)
+      operationId: getHealthReady
+      tags: [Health]
+      responses:
+        "200":
+          description: Service is ready
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+        "503":
+          description: Service not ready
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+
+  # ── Auth ────────────────────────────────────────────────────────────────────
+  /auth/signup:
+    post:
+      summary: Register a new user
+      operationId: signup
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SignupRequest"
+      responses:
+        "201":
+          description: User created, tokens issued
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenResponse"
+        "400":
+          description: Missing or invalid fields
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Email already registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /auth/login:
+    post:
+      summary: Authenticate and receive JWT pair
+      operationId: login
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenResponse"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /auth/refresh:
+    post:
+      summary: Rotate refresh token and get new access token
+      operationId: refreshToken
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefreshRequest"
+      responses:
+        "200":
+          description: New token pair issued
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenResponse"
+        "401":
+          description: Invalid or expired refresh token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /auth/me:
+    get:
+      summary: Get current authenticated user profile
+      operationId: getMe
+      tags: [Auth]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  # ── Chat ────────────────────────────────────────────────────────────────────
+  /chat/sessions:
+    post:
+      summary: Create a new chat session
+      operationId: createSession
+      tags: [Chat]
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSessionRequest"
+      responses:
+        "201":
+          description: Session created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatSession"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    get:
+      summary: List all sessions for the authenticated user
+      operationId: listSessions
+      tags: [Chat]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: List of sessions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ChatSession"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /chat/sessions/{sessionId}/messages:
+    post:
+      summary: Send a message and get an AI response
+      operationId: sendMessage
+      tags: [Chat]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendMessageRequest"
+      responses:
+        "200":
+          description: AI response generated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SendMessageResponse"
+        "400":
+          description: Missing message
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "502":
+          description: LLM or retrieval service error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    get:
+      summary: Get all messages in a session
+      operationId: getMessages
+      tags: [Chat]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Message history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ChatMessage"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /chat/sessions/{sessionId}:
+    delete:
+      summary: Delete a chat session and all its messages
+      operationId: deleteSession
+      tags: [Chat]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Session deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted:
+                    type: boolean
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  # ── Ingestion ────────────────────────────────────────────────────────────────
+  /ingest/document:
+    post:
+      summary: Enqueue a document for background ingestion into the vector store
+      operationId: ingestDocument
+      tags: [Ingestion]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IngestDocumentRequest"
+      responses:
+        "202":
+          description: Ingestion task accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IngestDocumentResponse"
+        "400":
+          description: Missing s3_key
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: Queue unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+tags:
+  - name: Health
+    description: Liveness and readiness probes
+  - name: Auth
+    description: User registration, login, and token management
+  - name: Chat
+    description: Chat sessions and RAG-powered messaging
+  - name: Ingestion
+    description: Background document ingestion into the vector store

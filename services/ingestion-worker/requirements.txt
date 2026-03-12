@@ -1,0 +1,13 @@
+celery==5.4.0
+kombu==5.3.7
+redis==5.2.1
+boto3==1.35.0
+langchain==0.3.14
+langchain-community==0.3.14
+langchain-ollama==0.2.2
+langchain-chroma==0.1.4
+chromadb==0.5.23
+pypdf==4.3.1
+python-dotenv==1.0.1
+python-json-logger==2.0.7
+pytest==8.3.4

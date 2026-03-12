@@ -1,3 +1,74 @@
+# Secrets / env files
+.env
+.env.*
+!.env.example
+website/.env
 website/static/secretKey.json
 
-website/.env
+# Python cache / build artifacts
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+dist/
+build/
+*.egg-info/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Notebooks
+.ipynb_checkpoints/
+
+# Local tooling / editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+CLAUDE.md
+
+# Runtime / local data
+*.log
+website/chroma/
+
+# ML model artifacts (large binaries)
+models/**/*.h5
+models/**/*.hdf5
+models/**/*.ckpt
+models/**/*.pt
+models/**/*.pth
+models/**/*.onnx
+models/**/*.pkl
+models/**/*.joblib
+
+# Secrets
+*.json
+.env
+*.pem
+*.key
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Data
+chroma/
+data/
+*.pkl
+*.h5
+
+# IDE
+.vscode/
+.idea/
