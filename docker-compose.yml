@@ -1,0 +1,192 @@
+version: "3.9"
+
+x-common-env: &common-env
+  DATABASE_URL: ${DATABASE_URL}
+  REDIS_URL: redis://redis:6379/0
+  JWT_SECRET: ${JWT_SECRET}
+  JWT_ALGORITHM: HS256
+  BCRYPT_COST_FACTOR: ${BCRYPT_COST_FACTOR:-12}
+
+services:
+  # ── Infrastructure ────────────────────────────────────────────────────────
+
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-openhealth}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-openhealth}
+      POSTGRES_DB: ${POSTGRES_DB:-openhealth}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-openhealth}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --save 60 1 --loglevel warning
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-openhealth}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:-openhealth}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+  # ── Application Services ───────────────────────────────────────────────────
+
+  auth-service:
+    build:
+      context: ./services/auth-service
+      target: runtime
+    restart: unless-stopped
+    environment:
+      <<: *common-env
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-15}
+      REFRESH_TOKEN_EXPIRE_DAYS: ${REFRESH_TOKEN_EXPIRE_DAYS:-7}
+      SERVICE_PORT: 5001
+    ports:
+      - "5001:5001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:5001/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  chat-orchestrator:
+    build:
+      context: ./services/chat-orchestrator
+      target: runtime
+    restart: unless-stopped
+    environment:
+      <<: *common-env
+      RETRIEVAL_SERVICE_URL: http://retrieval-service:5003
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      LLM_MODEL: ${LLM_MODEL:-hf.co/kevinjoythomas/medical-loratuned-chatbot-GGUF}
+      EMBED_MODEL: ${EMBED_MODEL:-nomic-embed-text}
+      SERVICE_PORT: 5002
+    ports:
+      - "5002:5002"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:5002/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  retrieval-service:
+    build:
+      context: ./services/retrieval-service
+      target: runtime
+    restart: unless-stopped
+    environment:
+      <<: *common-env
+      CHROMA_PATH: /app/chroma
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      EMBED_MODEL: ${EMBED_MODEL:-nomic-embed-text}
+      SERVICE_PORT: 5003
+    volumes:
+      - chroma_data:/app/chroma
+    ports:
+      - "5003:5003"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:5003/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  ingestion-worker:
+    build:
+      context: ./services/ingestion-worker
+      target: runtime
+    restart: unless-stopped
+    environment:
+      <<: *common-env
+      CELERY_BROKER_URL: amqp://${RABBITMQ_USER:-openhealth}:${RABBITMQ_PASS:-openhealth}@rabbitmq:5672//
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+      CHROMA_PATH: /app/chroma
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      EMBED_MODEL: ${EMBED_MODEL:-nomic-embed-text}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      S3_BUCKET: ${S3_BUCKET:-openhealth-docs}
+      S3_REGION: ${S3_REGION:-us-east-1}
+    volumes:
+      - chroma_data:/app/chroma
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  api-gateway:
+    build:
+      context: ./services/api-gateway
+      target: runtime
+    restart: unless-stopped
+    environment:
+      <<: *common-env
+      AUTH_SERVICE_URL: http://auth-service:5001
+      CHAT_SERVICE_URL: http://chat-orchestrator:5002
+      RATE_LIMIT_PER_MINUTE: ${RATE_LIMIT_PER_MINUTE:-60}
+      SERVICE_PORT: 5000
+    ports:
+      - "5000:5000"
+    depends_on:
+      auth-service:
+        condition: service_healthy
+      chat-orchestrator:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:5000/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  postgres_data:
+  redis_data:
+  rabbitmq_data:
+  chroma_data:

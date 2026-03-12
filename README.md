@@ -1,3 +1,88 @@
+<<<<<<< HEAD
+# OpenHealth — Microservices Monorepo
+
+Medical chat platform built with Flask microservices, Postgres, Redis, RabbitMQ, ChromaDB, and a LORA-fine-tuned LLaMA3 7B model.
+
+> **Previous monolith** lives in `website/` for reference. The active codebase is `services/`.
+
+## Architecture
+
+```
+api-gateway  (:5000)   →  auth-service       (:5001)
+                        →  chat-orchestrator  (:5002)
+                              └→ retrieval-service  (:5003)
+                              └→ Ollama (host)
+ingestion-worker (Celery)  ←  RabbitMQ
+```
+
+| Service | Port | Responsibility |
+|---|---|---|
+| api-gateway | 5000 | JWT validation, rate limiting, reverse proxy |
+| auth-service | 5001 | Signup/login, JWT issue/refresh, bcrypt passwords |
+| chat-orchestrator | 5002 | Chat sessions (Postgres + Redis), RAG pipeline |
+| retrieval-service | 5003 | ChromaDB hybrid search (BM25 + vector + RRF) |
+| ingestion-worker | — | Celery worker: S3 → chunk → embed → ChromaDB |
+
+## Prerequisites
+
+- Docker 24+ and Docker Compose v2
+- Ollama running on the host with models pulled:
+  ```bash
+  ollama pull hf.co/kevinjoythomas/medical-loratuned-chatbot-GGUF
+  ollama pull nomic-embed-text
+  ```
+
+## Quick Start
+
+```bash
+# 1. Copy and configure environment variables
+cp .env.example .env
+# Edit .env — at minimum set JWT_SECRET and database passwords
+
+# 2. Build and start all services
+make build
+make up
+
+# 3. Run database migrations
+make migrate
+
+# 4. Check service health
+curl http://localhost:5000/health
+```
+
+## API
+
+Base URL: `http://localhost:5000/v1`
+
+Full OpenAPI spec: [docs/api-spec.yaml](docs/api-spec.yaml)
+
+### Auth
+- `POST /v1/auth/signup` — Register user
+- `POST /v1/auth/login` — Login, receive JWT pair
+- `POST /v1/auth/refresh` — Rotate refresh token
+- `GET  /v1/auth/me` — Current user profile
+
+### Chat
+- `POST   /v1/chat/sessions` — Create new chat session
+- `GET    /v1/chat/sessions` — List user sessions
+- `POST   /v1/chat/sessions/{id}/messages` — Send message (RAG response)
+- `GET    /v1/chat/sessions/{id}/messages` — Get message history
+- `DELETE /v1/chat/sessions/{id}` — Delete session
+
+### Ingestion
+- `POST /v1/ingest/document` — Enqueue document for ingestion
+
+## Useful Commands
+
+```bash
+make logs          # Tail all service logs
+make logs-chat     # Tail a specific service
+make test          # Run all test suites
+make migrate       # Run Alembic migrations
+make shell-auth    # Open shell in auth-service container
+make clean         # Remove containers + volumes
+```
+=======
 # OpenHealth 🏥
 
 Welcome to **OpenHealth**, an innovative platform that empowers medical professionals with cutting-edge AI tools to assist in diagnosis, second opinions, and patient care. OpenHealth features a sophisticated **AI-powered chatbot** as its centerpiece, offering a seamless and intelligent experience for doctors and healthcare providers.
@@ -49,3 +134,4 @@ OpenHealth also features a **dedicated notification system** that allows doctors
 ---
 
 OpenHealth is designed to help doctors provide the best care possible, enhancing diagnosis accuracy and treatment efficiency with the power of artificial intelligence.
+>>>>>>> 7eb148395d859928bd181af2fa3e4f00cd82669e
