@@ -2,21 +2,24 @@
 
 Task flow:
 1. Download PDF bytes from S3 (s3_key).
-2. Load and split into chunks (chunk_size=800, overlap=80).
-3. Assign deterministic chunk IDs (idempotent upsert).
-4. Embed with nomic-embed-text via Ollama.
-5. Upsert to ChromaDB — skipping chunks that already exist.
+2. Compute SHA-256 content hash — skip early if already ingested (idempotent).
+3. Load and split into chunks (chunk_size=800, overlap=80).
+4. Assign deterministic chunk IDs.
+5. Embed with nomic-embed-text via Ollama.
+6. Upsert to ChromaDB — skipping chunks that already exist.
+7. Record ingestion metadata (s3_key, filename, content_hash, chunks_added) in Postgres.
 """
+import hashlib
 import logging
 import os
 
-from celery import shared_task
 from celery.utils.log import get_task_logger
 
 from app.worker import celery_app
 from app.chunker import load_pdf_bytes, split_docs, calculate_chunk_ids
 from app.embedder import get_embeddings
 from app.storage import download_bytes
+from app import db
 
 log = get_task_logger(__name__)
 
@@ -35,7 +38,7 @@ def ingest_document(self, s3_key: str, filename: str) -> dict:
         filename: Human-readable name used as metadata source.
 
     Returns:
-        dict with keys: s3_key, chunks_added, chunks_skipped.
+        dict with keys: s3_key, content_hash, chunks_added, chunks_skipped.
     """
     log.info("Starting ingestion: s3_key=%s filename=%s", s3_key, filename)
 
@@ -44,6 +47,17 @@ def ingest_document(self, s3_key: str, filename: str) -> dict:
     except Exception as exc:
         log.error("S3 download failed: %s", exc)
         raise self.retry(exc=exc)
+
+    content_hash = hashlib.sha256(pdf_bytes).hexdigest()
+
+    # Idempotency check — skip if this exact file content was already ingested
+    try:
+        db.ensure_table()
+        if db.is_already_ingested(content_hash):
+            log.info("Skipping already-ingested document: content_hash=%s", content_hash)
+            return {"s3_key": s3_key, "content_hash": content_hash, "chunks_added": 0, "chunks_skipped": -1}
+    except Exception as exc:
+        log.warning("DB idempotency check failed: %s — proceeding anyway", exc)
 
     try:
         docs = load_pdf_bytes(pdf_bytes, source_name=filename or s3_key)
@@ -59,11 +73,16 @@ def ingest_document(self, s3_key: str, filename: str) -> dict:
         log.error("ChromaDB upsert failed: %s", exc)
         raise self.retry(exc=exc)
 
+    try:
+        db.record_ingestion(s3_key, filename or s3_key, content_hash, added)
+    except Exception as exc:
+        log.warning("Failed to record ingestion metadata: %s", exc)
+
     log.info(
-        "Ingestion complete: s3_key=%s added=%d skipped=%d",
-        s3_key, added, skipped,
+        "Ingestion complete: s3_key=%s content_hash=%s added=%d skipped=%d",
+        s3_key, content_hash, added, skipped,
     )
-    return {"s3_key": s3_key, "chunks_added": added, "chunks_skipped": skipped}
+    return {"s3_key": s3_key, "content_hash": content_hash, "chunks_added": added, "chunks_skipped": skipped}
 
 
 def _upsert_to_chroma(chunks) -> tuple[int, int]:

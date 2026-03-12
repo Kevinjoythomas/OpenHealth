@@ -113,8 +113,14 @@ def run_chat(session_id: str, user_message: str) -> str:
         session_store.add_message(session_id, MessageRole.ASSISTANT, answer)
         return answer
 
-    # Build context string from retrieved docs
-    context_text = "\n\n".join(doc.page_content for doc in context_docs)
+    # Build context string from retrieved docs with page citations
+    context_parts = []
+    for doc in context_docs:
+        source = doc.metadata.get("source", "")
+        page = doc.metadata.get("page")
+        header = f"[Source: {source}, Page {page + 1}]" if source and page is not None else (f"[Source: {source}]" if source else "")
+        context_parts.append(f"{header}\n{doc.page_content}" if header else doc.page_content)
+    context_text = "\n\n".join(context_parts)
 
     # Assemble prompt directly (avoids stateful RunnableWithMessageHistory)
     system_with_context = SYSTEM_PROMPT.format(context=context_text)
@@ -134,6 +140,20 @@ def run_chat(session_id: str, user_message: str) -> str:
     answer = chain.invoke({})
     if not isinstance(answer, str):
         answer = str(answer)
+
+    # Append page citations footer if context was used
+    if context_docs:
+        seen: set[str] = set()
+        citations: list[str] = []
+        for doc in context_docs:
+            source = doc.metadata.get("source", "")
+            page = doc.metadata.get("page")
+            cite = f"{source} p.{page + 1}" if source and page is not None else source
+            if cite and cite not in seen:
+                seen.add(cite)
+                citations.append(cite)
+        if citations:
+            answer = answer + "\n\n*Sources: " + ", ".join(citations) + "*"
 
     # Persist assistant response
     session_store.add_message(session_id, MessageRole.ASSISTANT, answer)
