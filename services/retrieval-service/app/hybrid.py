@@ -1,12 +1,10 @@
-"""Hybrid search with Reciprocal Rank Fusion (RRF) — Phase 4 placeholder.
+"""Hybrid search with Reciprocal Rank Fusion (RRF).
 
-Currently passes through vector-only results. When BM25 is implemented (Phase 4),
-this module will:
-1. Run vector_search() and bm25_search() concurrently.
-2. Normalise scores with RRF: score = Σ 1/(k + rank_i) for each retriever i.
-3. Return the top_k results sorted by fused score.
+Runs vector_search() and bm25_search() concurrently via ThreadPoolExecutor,
+then fuses results with RRF: score = Σ 1/(k + rank_i) for each retriever.
 """
 import logging
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from app.vector_store import vector_search
 from app.bm25 import bm25_search
@@ -14,18 +12,35 @@ from app.bm25 import bm25_search
 log = logging.getLogger(__name__)
 
 RRF_K = 60  # standard RRF constant
+_RETRIEVAL_TIMEOUT = 10.0  # seconds per retriever
 
 
 def hybrid_search(query: str, top_k: int = 5) -> list[dict]:
-    """Fuse vector and BM25 results via RRF.
+    """Fuse vector and BM25 results via RRF using concurrent retrieval."""
+    fetch_n = top_k * 2
 
-    Phase 4 TODO: run both retrievers concurrently with ThreadPoolExecutor.
-    """
-    vector_results = vector_search(query, top_k=top_k * 2)
-    bm25_results = bm25_search(query, top_k=top_k * 2)
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        fut_vector = pool.submit(vector_search, query, fetch_n)
+        fut_bm25 = pool.submit(bm25_search, query, fetch_n)
+
+        vector_results: list[dict] = []
+        bm25_results: list[dict] = []
+
+        for fut in as_completed(
+            {fut_vector: "vector", fut_bm25: "bm25"},
+            timeout=_RETRIEVAL_TIMEOUT,
+        ):
+            name = {fut_vector: "vector", fut_bm25: "bm25"}[fut]
+            try:
+                result = fut.result()
+                if name == "vector":
+                    vector_results = result
+                else:
+                    bm25_results = result
+            except Exception as exc:
+                log.warning("%s retriever failed: %s — continuing without it", name, exc)
 
     if not bm25_results:
-        # BM25 not yet implemented — return vector results directly
         return vector_results[:top_k]
 
     return _rrf_fuse(vector_results, bm25_results, top_k=top_k)
