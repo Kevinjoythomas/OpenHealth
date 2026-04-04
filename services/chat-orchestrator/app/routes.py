@@ -76,7 +76,12 @@ def send_message(session_id: str):
         log.error("Chat pipeline error: %s", exc)
         return jsonify({"error": "Failed to process message"}), 502
 
-    return jsonify({"session_id": session_id, "answer": answer}), 200
+    session = session_store.get_session(session_id, user_id)
+    return jsonify({
+        "session_id": session_id,
+        "answer": answer,
+        "title": session.title if session else None,
+    }), 200
 
 
 @chat_bp.get("/sessions/<session_id>/messages")

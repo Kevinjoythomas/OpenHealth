@@ -18,7 +18,7 @@ def create_app() -> Flask:
     app.register_blueprint(ingest_bp)
 
     with app.app_context():
-        import app.models  # noqa: F401
+        from app import models as _models  # noqa: F401
         db.create_all()
 
     # ── Health endpoints ──────────────────────────────────────────────────────

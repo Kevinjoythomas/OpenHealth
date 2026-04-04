@@ -27,10 +27,14 @@ class RateLimiter:
 
     def _get_redis(self) -> redis.Redis:
         if self._redis is None:
-            self._redis = redis.from_url(
-                os.getenv("REDIS_URL", "redis://redis:6379/0"),
-                decode_responses=True,
-            )
+            if os.getenv("USE_FAKEREDIS", "0") == "1":
+                import fakeredis
+                self._redis = fakeredis.FakeRedis(decode_responses=True)
+            else:
+                self._redis = redis.from_url(
+                    os.getenv("REDIS_URL", "redis://redis:6379/0"),
+                    decode_responses=True,
+                )
         return self._redis
 
     def _check_rate_limit(self):
