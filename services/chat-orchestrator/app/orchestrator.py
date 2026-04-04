@@ -67,9 +67,16 @@ def _call_retrieval_service(query: str, top_k: int = 3) -> list[Document]:
         )
         resp.raise_for_status()
         results = resp.json().get("results", [])
+        # Only keep results whose score indicates genuine relevance.
+        # RRF scores: a document ranked highly by *both* retrievers scores ~0.033;
+        # a document from only one retriever scores ~0.016.  Threshold 0.020 drops
+        # documents that appeared in just one ranked list near the bottom — i.e. no
+        # real signal.  score=None (vector-only fallback) is kept so cold-start works.
+        MIN_SCORE = 0.020
         return [
             Document(page_content=r["content"], metadata=r.get("metadata", {}))
             for r in results
+            if r.get("score") is None or r.get("score", 0) >= MIN_SCORE
         ]
     except Exception as exc:
         log.warning("Retrieval service error: %s — proceeding without context", exc)
@@ -154,6 +161,9 @@ def run_chat(session_id: str, user_message: str) -> str:
                 citations.append(cite)
         if citations:
             answer = answer + "\n\n*Sources: " + ", ".join(citations) + "*"
+    else:
+        # No documents met the relevance threshold — answer came from model training knowledge
+        answer = answer + "\n\n*No relevant documents found in knowledge base — answer based on model training knowledge.*"
 
     # Persist assistant response
     session_store.add_message(session_id, MessageRole.ASSISTANT, answer)

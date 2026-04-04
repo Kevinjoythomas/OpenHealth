@@ -5,6 +5,7 @@ Write path: write to Postgres, then invalidate / update Redis cache.
 """
 import json
 import logging
+import re
 import uuid
 
 import redis
@@ -17,13 +18,33 @@ log = logging.getLogger(__name__)
 
 _redis_client: redis.Redis | None = None
 
+_GENERIC_SESSION_TITLES = {
+    "chat",
+    "consultation",
+    "new chat",
+    "new consultation",
+    "untitled",
+}
+_LEADING_TITLE_PATTERNS = [
+    r"^(?:hi|hello|hey)\b[\s,!:.-]*",
+    r"^(?:can|could|would)\s+you\s+(?:please\s+)?(?:help(?: me)? with|help|tell me about|explain|advise(?: me)? on)\s+",
+    r"^(?:please\s+)?(?:help(?: me)? with|tell me about|explain|advise(?: me)? on|i need help with)\s+",
+    r"^(?:what should i do about|should i worry about|is it normal to have|is it normal for)\s+",
+    r"^(?:i have|i'm having|i am having|i've been having|i have been having|i feel|my)\s+",
+]
+
 
 def get_redis() -> redis.Redis:
     global _redis_client
     if _redis_client is None:
-        _redis_client = redis.from_url(
-            current_app.config["REDIS_URL"], decode_responses=True
-        )
+        import os
+        if os.getenv("USE_FAKEREDIS", "0") == "1":
+            import fakeredis
+            _redis_client = fakeredis.FakeRedis(decode_responses=True)
+        else:
+            _redis_client = redis.from_url(
+                current_app.config["REDIS_URL"], decode_responses=True
+            )
     return _redis_client
 
 
@@ -31,28 +52,105 @@ def _session_cache_key(session_id: str) -> str:
     return f"chat:session:{session_id}:messages"
 
 
+def _normalise_text(value: str | None) -> str:
+    return " ".join((value or "").split())
+
+
+def _needs_generated_title(title: str | None) -> bool:
+    cleaned = _normalise_text(title).strip(" -:;,.!?").lower()
+    return not cleaned or cleaned in _GENERIC_SESSION_TITLES
+
+
+def _truncate_title(text: str, limit: int = 60) -> str:
+    if len(text) <= limit:
+        return text
+
+    trimmed = text[: limit - 3].rstrip()
+    if " " in trimmed:
+        trimmed = trimmed.rsplit(" ", 1)[0]
+    trimmed = trimmed.rstrip(" ,;:-")
+    return (trimmed or text[: limit - 3].rstrip()) + "..."
+
+
+def _generate_session_title(message: str) -> str:
+    base = _normalise_text(message)
+    if not base:
+        return "New consultation"
+
+    candidate = re.split(r"[\r\n]+", base, maxsplit=1)[0]
+    sentence = re.split(r"(?<=[.!?])\s+", candidate, maxsplit=1)[0]
+    candidate = sentence.strip(" -:;,.!?") or candidate.strip(" -:;,.!?")
+
+    for pattern in _LEADING_TITLE_PATTERNS:
+        updated = re.sub(pattern, "", candidate, count=1, flags=re.IGNORECASE)
+        if updated != candidate:
+            candidate = updated.strip(" -:;,.!?")
+            break
+
+    if not candidate:
+        candidate = base.strip(" -:;,.!?")
+    if not candidate:
+        return "New consultation"
+
+    candidate = candidate[0].upper() + candidate[1:]
+    return _truncate_title(candidate, limit=60)
+
+
+def _prepare_initial_title(title: str | None) -> str | None:
+    cleaned = _normalise_text(title)
+    if _needs_generated_title(cleaned):
+        return None
+    return cleaned[:255]
+
+
+def _populate_missing_title(session: ChatSession | None) -> bool:
+    if not session or not _needs_generated_title(session.title):
+        return False
+
+    first_user_message = (
+        ChatMessage.query
+        .filter_by(session_id=session.id, role=MessageRole.USER)
+        .order_by(ChatMessage.created_at.asc())
+        .first()
+    )
+    if not first_user_message:
+        return False
+
+    session.title = _generate_session_title(first_user_message.content)
+    return True
+
+
 # ── Session CRUD ──────────────────────────────────────────────────────────────
 
 def create_session(user_id: str, title: str | None = None) -> ChatSession:
-    session = ChatSession(user_id=user_id, title=title)
+    session = ChatSession(user_id=user_id, title=_prepare_initial_title(title))
     db.session.add(session)
     db.session.commit()
     return session
 
 
 def get_session(session_id: str, user_id: str) -> ChatSession | None:
-    return ChatSession.query.filter_by(
+    session = ChatSession.query.filter_by(
         id=uuid.UUID(session_id), user_id=user_id
     ).first()
+    if _populate_missing_title(session):
+        db.session.commit()
+    return session
 
 
 def list_sessions(user_id: str) -> list[ChatSession]:
-    return (
+    sessions = (
         ChatSession.query
         .filter_by(user_id=user_id)
         .order_by(ChatSession.updated_at.desc())
         .all()
     )
+    changed = False
+    for session in sessions:
+        changed = _populate_missing_title(session) or changed
+    if changed:
+        db.session.commit()
+    return sessions
 
 
 def delete_session(session_id: str, user_id: str) -> bool:
@@ -68,18 +166,22 @@ def delete_session(session_id: str, user_id: str) -> bool:
 # ── Message CRUD ──────────────────────────────────────────────────────────────
 
 def add_message(session_id: str, role: MessageRole, content: str) -> ChatMessage:
+    session_uuid = uuid.UUID(session_id)
     msg = ChatMessage(
-        session_id=uuid.UUID(session_id),
+        session_id=session_uuid,
         role=role,
         content=content,
     )
     db.session.add(msg)
 
     # Bump session updated_at
-    session = db.session.get(ChatSession, uuid.UUID(session_id))
+    session = db.session.get(ChatSession, session_uuid)
     if session:
         from datetime import datetime, timezone
         session.updated_at = datetime.now(timezone.utc)
+        if role == MessageRole.USER:
+            db.session.flush()
+            _populate_missing_title(session)
 
     db.session.commit()
     _append_to_cache(session_id, msg)

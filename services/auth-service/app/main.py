@@ -17,7 +17,7 @@ def create_app() -> Flask:
     app.register_blueprint(auth_bp)
 
     with app.app_context():
-        import app.models  # noqa: F401 — register models with SQLAlchemy metadata
+        from app import models as _models  # noqa: F401 — register models with SQLAlchemy metadata
         db.create_all()
 
     # ── Health endpoints ──────────────────────────────────────────────────────

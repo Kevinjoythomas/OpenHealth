@@ -1,390 +1,382 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Open Health</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css" integrity="sha512-KfkfwYDsLkIlwQp6LFnl8zNdLGxu9YAA1QvwINks4PhcElQSvqcyVLLD9aMhXd13uQjoXtEKNosOWaZqXgel0g==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <style>
-        /* Base Styles */
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
-        
-        *, *::before, *::after {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-        
-        body, html {
-            margin: 0;
-            padding: 0;
-            font-family: 'Poppins', sans-serif;
-            background-image: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('https://images.unsplash.com/photo-1551601651-2a8555f1a136?q=80&w=2047&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D');
-            background-size: cover;
-            background-position: center;
-            background-attachment: fixed;
-            color: #333;
-            line-height: 1.6;
-        }
-        
-        /* Navbar Styles */
-        .navbar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 20px 50px;
-            background: rgba(0, 0, 0, 0.8);
-            position: fixed;
-            width: 100%;
-            top: 0;
-            z-index: 1000;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-        }
-        
-        .logo h1 {
-            color: white;
-            font-size: 24px;
-            font-weight: 700;
-            animation: fadeIn 2s ease;
-            margin: 0;
-        }
-        
-        nav ul {
-            list-style-type: none;
-            display: flex;
-            margin: 0;
-            padding: 0;
-        }
-        
-        nav ul li {
-            margin-left: 30px;
-        }
-        
-        nav ul li a {
-            text-decoration: none;
-            color: white;
-            font-size: 16px;
-            padding: 10px;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            position: relative;
-        }
-        
-        nav ul li a:after {
-            content: '';
-            position: absolute;
-            width: 0;
-            height: 2px;
-            bottom: 0;
-            left: 0;
-            background-color: #6c63ff;
-            transition: width 0.3s ease;
-        }
-        
-        nav ul li a:hover:after {
-            width: 100%;
-        }
-        
-        /* Hero Section */
-        .hero {
-            text-align: center;
-            padding: 150px 20px 100px;
-            color: white;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        
-        .hero h2 {
-            font-size: 50px;
-            font-weight: 700;
-            margin-bottom: 20px;
-            animation: fadeIn 2s ease;
-        }
-        
-        .hero h3 {
-            font-size: 30px;
-            font-weight: 600;
-            margin-bottom: 20px;
-            animation: fadeIn 2.5s ease;
-            color: #6c63ff;
-        }
-        
-        .hero p {
-            font-size: 20px;
-            font-weight: 400;
-            margin-bottom: 30px;
-            animation: fadeIn 3s ease;
-            max-width: 800px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-        
-        .hero .explore-more {
-            font-size: 16px;
-            padding: 12px 30px;
-            background-color: #6c63ff;
-            color: white;
-            border: none;
-            border-radius: 30px;
-            font-weight: 600;
-            cursor: pointer;
-            text-transform: uppercase;
-            animation: fadeIn 3.5s ease;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(108, 99, 255, 0.5);
-        }
-        
-        .hero .explore-more:hover {
-            background-color: #5a52e0;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(108, 99, 255, 0.7);
-        }
-        
-        /* Features Section */
-        .features {
-            background-color: white;
-            padding: 80px 20px;
-        }
-        
-        .features-container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        
-        .features-heading {
-            text-align: center;
-            margin-bottom: 60px;
-        }
-        
-        .features-heading h2 {
-            font-size: 36px;
-            font-weight: 700;
-            color: #333;
-            margin-bottom: 15px;
-        }
-        
-        .features-heading p {
-            color: #666;
-            max-width: 700px;
-            margin: 0 auto;
-        }
-        
-        .features-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 40px;
-        }
-        
-        .feature-item {
-            background-color: #f9f9f9;
-            border-radius: 10px;
-            padding: 30px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
-            text-align: center;
-            transition: all 0.3s ease;
-            opacity: 0;
-            transform: translateY(30px);
-        }
-        
-        .feature-item.show {
-            opacity: 1;
-            transform: translateY(0);
-        }
-        
-        .feature-item:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-        }
-        
-        .feature-icon {
-            font-size: 40px;
-            color: #6c63ff;
-            margin-bottom: 20px;
-        }
-        
-        .feature-item h3 {
-            font-size: 22px;
-            font-weight: 600;
-            margin-bottom: 15px;
-            color: #333;
-        }
-        
-        .feature-item p {
-            color: #666;
-            font-size: 15px;
-        }
-        
-        /* Animations */
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        
-        @keyframes slideInLeft {
-            from { 
-                transform: translateX(-100px);
-                opacity: 0;
-            }
-            to { 
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-        
-        @keyframes slideInRight {
-            from { 
-                transform: translateX(100px);
-                opacity: 0;
-            }
-            to { 
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-        
-        /* Responsive Design */
-        @media (max-width: 768px) {
-            .navbar {
-                padding: 15px 20px;
-            }
-            
-            .logo h1 {
-                font-size: 20px;
-            }
-            
-            nav ul li {
-                margin-left: 15px;
-            }
-            
-            nav ul li a {
-                font-size: 14px;
-            }
-            
-            .hero h2 {
-                font-size: 36px;
-            }
-            
-            .hero h3 {
-                font-size: 24px;
-            }
-            
-            .hero p {
-                font-size: 16px;
-            }
-            
-            .features-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OpenHealth — AI Medical Consultation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Outfit:wght@200;300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+:root {
+  --bg-deep: #060a09;
+  --bg: #0a0f0e;
+  --surface: #111917;
+  --surface-2: #162220;
+  --border: #1e2d28;
+  --teal: #00897B;
+  --teal-dark: #00695C;
+  --teal-glow: rgba(0,137,123,0.15);
+  --teal-glow-strong: rgba(0,137,123,0.3);
+  --text: #e2ede9;
+  --text-dim: #8aa39b;
+  --text-muted: #4a6660;
+  --accent: #4fd1c5;
+  --serif: 'Instrument Serif', Georgia, serif;
+  --sans: 'Outfit', sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg-deep);color:var(--text);font-family:var(--sans);font-weight:300;line-height:1.7;overflow-x:hidden}
+
+/* ── Grain overlay ── */
+body::after{content:'';position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  opacity:0.4}
+
+/* ── Navbar ── */
+.nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:0 clamp(20px,5vw,80px);height:72px;display:flex;align-items:center;justify-content:space-between;
+  background:rgba(6,10,9,0.85);backdrop-filter:blur(20px);border-bottom:1px solid rgba(30,45,40,0.5);
+  transition:all 0.4s ease}
+.nav.scrolled{background:rgba(6,10,9,0.95);height:60px}
+.nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none}
+.nav-logo svg{width:28px;height:28px;color:var(--teal)}
+.nav-logo span{font-family:var(--serif);font-size:22px;color:var(--text);letter-spacing:-0.02em}
+.nav-links{display:flex;align-items:center;gap:32px;list-style:none}
+.nav-links a{color:var(--text-dim);text-decoration:none;font-size:14px;font-weight:400;letter-spacing:0.02em;transition:color 0.3s;position:relative}
+.nav-links a::after{content:'';position:absolute;bottom:-4px;left:0;width:0;height:1px;background:var(--teal);transition:width 0.3s}
+.nav-links a:hover{color:var(--text)}
+.nav-links a:hover::after{width:100%}
+.nav-cta{background:var(--teal);color:#fff;padding:8px 20px;border-radius:6px;font-weight:500;font-size:13px;text-decoration:none;transition:all 0.3s;border:none;cursor:pointer;letter-spacing:0.03em}
+.nav-cta:hover{background:var(--teal-dark);transform:translateY(-1px);box-shadow:0 8px 30px var(--teal-glow-strong)}
+.hamburger{display:none;background:none;border:none;color:var(--text);font-size:22px;cursor:pointer}
+.mobile-menu{display:none;position:fixed;top:72px;left:0;right:0;background:rgba(6,10,9,0.97);backdrop-filter:blur(20px);padding:24px;border-bottom:1px solid var(--border);flex-direction:column;gap:16px;z-index:99}
+.mobile-menu.open{display:flex}
+.mobile-menu a{color:var(--text-dim);text-decoration:none;font-size:16px;padding:8px 0;border-bottom:1px solid var(--border)}
+
+/* ── Hero ── */
+.hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:120px 24px 80px;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-200px;left:50%;transform:translateX(-50%);width:800px;height:800px;
+  background:radial-gradient(circle,var(--teal-glow) 0%,transparent 60%);pointer-events:none;animation:pulse-glow 6s ease-in-out infinite}
+@keyframes pulse-glow{0%,100%{opacity:0.4;transform:translateX(-50%) scale(1)}50%{opacity:0.7;transform:translateX(-50%) scale(1.1)}}
+
+.hero-badge{display:inline-flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);padding:6px 16px;border-radius:100px;font-size:12px;color:var(--text-dim);font-family:var(--mono);letter-spacing:0.05em;margin-bottom:32px;
+  opacity:0;animation:fade-up 0.8s ease forwards 0.2s}
+.hero-badge .dot{width:6px;height:6px;background:var(--teal);border-radius:50%;animation:blink 2s ease infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+
+.hero h1{font-family:var(--serif);font-size:clamp(42px,8vw,88px);font-weight:400;line-height:1.05;letter-spacing:-0.03em;max-width:900px;color:var(--text);
+  opacity:0;animation:fade-up 1s ease forwards 0.4s}
+.hero h1 em{font-style:italic;color:var(--teal)}
+
+.hero-sub{font-size:clamp(16px,2.5vw,20px);color:var(--text-dim);max-width:560px;margin:28px auto 40px;line-height:1.7;
+  opacity:0;animation:fade-up 1s ease forwards 0.7s}
+
+.hero-actions{display:flex;gap:16px;flex-wrap:wrap;justify-content:center;
+  opacity:0;animation:fade-up 1s ease forwards 0.9s}
+.btn-primary{background:var(--teal);color:#fff;padding:14px 32px;border-radius:8px;font-weight:500;font-size:15px;text-decoration:none;transition:all 0.3s;border:none;cursor:pointer;font-family:var(--sans)}
+.btn-primary:hover{background:var(--teal-dark);transform:translateY(-2px);box-shadow:0 12px 40px var(--teal-glow-strong)}
+.btn-secondary{background:transparent;color:var(--text);padding:14px 32px;border-radius:8px;font-weight:400;font-size:15px;text-decoration:none;transition:all 0.3s;border:1px solid var(--border);font-family:var(--sans)}
+.btn-secondary:hover{border-color:var(--text-muted);background:var(--surface)}
+
+.hero-visual{margin-top:80px;position:relative;width:100%;max-width:700px;
+  opacity:0;animation:fade-up 1.2s ease forwards 1.1s}
+.terminal{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:0;overflow:hidden;font-family:var(--mono);font-size:13px;text-align:left;box-shadow:0 40px 80px rgba(0,0,0,0.4)}
+.terminal-bar{display:flex;align-items:center;gap:8px;padding:12px 16px;background:rgba(0,0,0,0.3);border-bottom:1px solid var(--border)}
+.terminal-dot{width:10px;height:10px;border-radius:50%}
+.terminal-dot:nth-child(1){background:#ff5f56}
+.terminal-dot:nth-child(2){background:#ffbd2e}
+.terminal-dot:nth-child(3){background:#27c93f}
+.terminal-body{padding:20px;min-height:160px}
+.terminal-line{margin:6px 0;color:var(--text-dim)}
+.terminal-line .prompt{color:var(--teal)}
+.terminal-line .cmd{color:var(--text)}
+.terminal-line .output{color:var(--text-dim);opacity:0.7}
+.typing-cursor{display:inline-block;width:8px;height:16px;background:var(--teal);animation:cursor-blink 1s step-end infinite;vertical-align:middle;margin-left:2px}
+@keyframes cursor-blink{0%,100%{opacity:1}50%{opacity:0}}
+
+@keyframes fade-up{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── Stats ── */
+.stats{padding:100px 24px;background:var(--bg)}
+.stats-inner{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);gap:40px}
+.stat{text-align:center;padding:32px 16px;border-radius:12px;border:1px solid transparent;transition:all 0.4s}
+.stat:hover{border-color:var(--border);background:var(--surface)}
+.stat-num{font-family:var(--mono);font-size:clamp(32px,5vw,48px);font-weight:500;color:var(--teal);line-height:1;margin-bottom:8px}
+.stat-label{color:var(--text-dim);font-size:14px;letter-spacing:0.02em}
+
+/* ── Features ── */
+.features{padding:120px 24px;background:var(--bg-deep)}
+.section-label{font-family:var(--mono);font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:var(--teal);margin-bottom:16px}
+.section-title{font-family:var(--serif);font-size:clamp(30px,5vw,48px);font-weight:400;line-height:1.15;letter-spacing:-0.02em;max-width:600px;margin-bottom:60px}
+.features-grid{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px}
+.feat-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:36px 28px;transition:all 0.4s;position:relative;overflow:hidden;
+  opacity:0;transform:translateY(40px)}
+.feat-card.visible{opacity:1;transform:translateY(0)}
+.feat-card:hover{border-color:var(--teal);transform:translateY(-4px);box-shadow:0 20px 60px var(--teal-glow)}
+.feat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--teal),transparent);opacity:0;transition:opacity 0.4s}
+.feat-card:hover::before{opacity:1}
+.feat-icon{width:48px;height:48px;background:var(--teal-glow);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--teal);margin-bottom:20px}
+.feat-card h3{font-family:var(--serif);font-size:20px;font-weight:400;margin-bottom:10px;color:var(--text)}
+.feat-card p{color:var(--text-dim);font-size:14px;line-height:1.7}
+
+/* ── How it works ── */
+.how{padding:120px 24px;background:var(--bg);position:relative}
+.how-inner{max-width:900px;margin:0 auto}
+.how-steps{display:flex;flex-direction:column;gap:0;position:relative;padding-left:40px}
+.how-steps::before{content:'';position:absolute;left:15px;top:20px;bottom:20px;width:1px;background:linear-gradient(to bottom,var(--teal),var(--border))}
+.how-step{position:relative;padding:32px 0;opacity:0;transform:translateX(30px)}
+.how-step.visible{opacity:1;transform:translateX(0);transition:all 0.6s ease}
+.how-step::before{content:'';position:absolute;left:-29px;top:40px;width:10px;height:10px;background:var(--teal);border-radius:50%;box-shadow:0 0 20px var(--teal-glow-strong)}
+.how-step .step-num{font-family:var(--mono);font-size:11px;color:var(--teal);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:8px}
+.how-step h3{font-family:var(--serif);font-size:24px;font-weight:400;margin-bottom:8px}
+.how-step p{color:var(--text-dim);font-size:15px;max-width:500px}
+
+/* ── Contact ── */
+.contact{padding:120px 24px;background:var(--bg-deep)}
+.contact-inner{max-width:600px;margin:0 auto}
+.contact-form{display:flex;flex-direction:column;gap:16px;margin-top:40px}
+.form-group{display:flex;flex-direction:column;gap:6px}
+.form-group label{font-size:12px;color:var(--text-dim);font-family:var(--mono);letter-spacing:0.08em;text-transform:uppercase}
+.form-group input,.form-group textarea{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 16px;color:var(--text);font-family:var(--sans);font-size:14px;transition:border-color 0.3s;outline:none}
+.form-group input:focus,.form-group textarea:focus{border-color:var(--teal)}
+.form-group textarea{min-height:120px;resize:vertical}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+
+/* ── Footer ── */
+footer{padding:60px 24px 40px;background:var(--bg-deep);border-top:1px solid var(--border)}
+.footer-inner{max-width:1100px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:20px}
+.footer-logo{display:flex;align-items:center;gap:8px}
+.footer-logo svg{width:20px;height:20px;color:var(--teal)}
+.footer-logo span{font-family:var(--serif);font-size:18px;color:var(--text)}
+.footer-links{display:flex;gap:24px}
+.footer-links a{color:var(--text-muted);text-decoration:none;font-size:13px;transition:color 0.3s}
+.footer-links a:hover{color:var(--text)}
+.footer-copy{width:100%;text-align:center;margin-top:24px;padding-top:24px;border-top:1px solid var(--border);color:var(--text-muted);font-size:12px}
+
+/* ── Responsive ── */
+@media(max-width:768px){
+  .nav-links{display:none}
+  .hamburger{display:block}
+  .stats-inner{grid-template-columns:repeat(2,1fr);gap:20px}
+  .form-row{grid-template-columns:1fr}
+  .how-steps{padding-left:30px}
+  .footer-inner{flex-direction:column;text-align:center}
+}
+@media(max-width:480px){
+  .stats-inner{grid-template-columns:1fr 1fr}
+  .stat{padding:20px 12px}
+}
+</style>
 </head>
 <body>
-    <!-- Navbar -->
-    <div class="navbar">
-        <div class="logo">
-            <h1>Open Health</h1>
-        </div>
-        <nav>
-            <ul>
-              <li><a href="/">Home</a></li>
-              <li><a href="/features">Services</a></li>
-              <li><a href="/login">Login</a></li>
-              <li><a href="/login">Sign Up</a></li>
-              <li><a href="/ChatBot">Medical ChatBot</a></li>
-            </ul>
-        </nav>
+
+<!-- Nav -->
+<nav class="nav" id="nav">
+  <a href="/" class="nav-logo">
+    <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 9v6m-3-3h6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span>OpenHealth</span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="/">Home</a></li>
+    <li><a href="/ChatBot">ChatBot</a></li>
+    <li><a href="#contact">Contact</a></li>
+    <li><a href="/login" class="nav-cta">Sign In</a></li>
+  </ul>
+  <button class="hamburger" onclick="document.getElementById('mobileMenu').classList.toggle('open')"><i class="fas fa-bars"></i></button>
+</nav>
+<div class="mobile-menu" id="mobileMenu">
+  <a href="/" onclick="this.parentElement.classList.remove('open')">Home</a>
+  <a href="/ChatBot" onclick="this.parentElement.classList.remove('open')">ChatBot</a>
+  <a href="#contact" onclick="this.parentElement.classList.remove('open')">Contact</a>
+  <a href="/login">Sign In</a>
+</div>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="hero-badge"><span class="dot"></span> AI-powered medical consultation</div>
+  <h1>Your health deserves <em>better</em> answers</h1>
+  <p class="hero-sub">OpenHealth combines a fine-tuned medical AI with clinical document retrieval to give you grounded, trustworthy health guidance.</p>
+  <div class="hero-actions">
+    <a href="/ChatBot" class="btn-primary">Start Consultation</a>
+    <a href="#how" class="btn-secondary">How It Works</a>
+  </div>
+  <div class="hero-visual">
+    <div class="terminal">
+      <div class="terminal-bar"><div class="terminal-dot"></div><div class="terminal-dot"></div><div class="terminal-dot"></div></div>
+      <div class="terminal-body">
+        <div class="terminal-line"><span class="prompt">patient &gt;</span> <span class="cmd" id="typewriter"></span><span class="typing-cursor" id="cursor"></span></div>
+        <div class="terminal-line" id="response" style="display:none"><span class="prompt">doctor &gt;</span> <span class="output" id="responseText"></span></div>
+        <div class="terminal-line" id="sources" style="display:none"><span class="output" style="font-size:11px;color:var(--text-muted)">Sources: chestPain(full).pdf p.33, heartDisease.pdf p.1</span></div>
+      </div>
     </div>
+  </div>
+</section>
 
-    <!-- Hero Section -->
-    <section class="hero">
-        <h2>Welcome to Open Health</h2>
-        <h3>Connecting Patients with Specialists</h3>
-        <p>Our platform helps patients find the right medical specialists quickly and easily. We prioritize your health by connecting you with expert doctors across multiple specializations.</p>
-        <a href="/login"><button class="explore-more">Get Started Now</button></a>
-    </section>
+<!-- Stats -->
+<section class="stats">
+  <div class="stats-inner">
+    <div class="stat"><div class="stat-num" data-target="112165" data-suffix="+">0</div><div class="stat-label">Training Samples</div></div>
+    <div class="stat"><div class="stat-num" data-target="27" data-suffix="">0</div><div class="stat-label">Medical PDFs Ingested</div></div>
+    <div class="stat"><div class="stat-num" data-target="86" data-suffix="%">0</div><div class="stat-label">Rubric Accuracy</div></div>
+    <div class="stat"><div class="stat-num" data-target="2.5" data-suffix="x" data-decimal="1">0</div><div class="stat-label">Faster Than Base Model</div></div>
+  </div>
+</section>
 
-    <!-- Features Section -->
-    <section class="features">
-        <div class="features-container">
-            <div class="features-heading">
-                <h2>Why Choose Open Health</h2>
-                <p>Our platform offers a comprehensive suite of features designed to make healthcare more accessible and efficient.</p>
-            </div>
-            <div class="features-grid">
-                <div class="feature-item">
-                    <div class="feature-icon">
-                        <i class="fas fa-user-md"></i>
-                    </div>
-                    <h3>Expert Specialists</h3>
-                    <p>Connect with verified medical specialists across various fields of expertise to address your specific health concerns.</p>
-                </div>
-                
-                <div class="feature-item">
-                    <div class="feature-icon">
-                        <i class="fas fa-calendar-check"></i>
-                    </div>
-                    <h3>Easy Scheduling</h3>
-                    <p>Book appointments with your preferred doctors quickly with our intuitive scheduling system.</p>
-                </div>
-                
-                <div class="feature-item">
-                    <div class="feature-icon">
-                        <i class="fas fa-laptop-medical"></i>
-                    </div>
-                    <h3>Virtual Consultations</h3>
-                    <p>Get medical advice from the comfort of your home through secure video consultations.</p>
-                </div>
-                
-                <div class="feature-item">
-                    <div class="feature-icon">
-                        <i class="fas fa-file-medical-alt"></i>
-                    </div>
-                    <h3>Medical Records</h3>
-                    <p>Securely store and share your medical history and records with authorized healthcare providers.</p>
-                </div>
-                
-                <div class="feature-item">
-                    <div class="feature-icon">
-                        <i class="fas fa-shield-alt"></i>
-                    </div>
-                    <h3>Privacy Protection</h3>
-                    <p>Your personal and medical information is protected with industry-leading security measures.</p>
-                </div>
-                
-                <div class="feature-item">
-                    <div class="feature-icon">
-                        <i class="fas fa-comments"></i>
-                    </div>
-                    <h3>24/7 Support</h3>
-                    <p>Our dedicated support team is available around the clock to assist with any questions or concerns.</p>
-                </div>
-            </div>
-        </div>
-    </section>
+<!-- Features -->
+<section class="features" id="features">
+  <div style="max-width:1100px;margin:0 auto">
+    <div class="section-label">Architecture</div>
+    <div class="section-title">Built on proven medical AI techniques</div>
+    <div class="features-grid">
+      <div class="feat-card">
+        <div class="feat-icon"><i class="fas fa-brain"></i></div>
+        <h3>Fine-Tuned Llama 3 8B</h3>
+        <p>LoRA-adapted on 112K+ real doctor-patient conversations from the ChatDoctor dataset. Learns medical tone, diagnosis patterns, and treatment recommendations.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon"><i class="fas fa-search"></i></div>
+        <h3>Hybrid RAG Retrieval</h3>
+        <p>Combines BM25 keyword search with dense vector search via Reciprocal Rank Fusion. Catches both exact medical terms and semantic synonyms.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon"><i class="fas fa-books-medical"></i></div>
+        <h3>Clinical Document Grounding</h3>
+        <p>Answers grounded in WHO guidelines, ACC/AHA clinical practice guidelines, and peer-reviewed medical PDFs. Sources cited with every response.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon"><i class="fas fa-shield-halved"></i></div>
+        <h3>Honest Fallbacks</h3>
+        <p>When the knowledge base doesn't cover a topic, the system says so. No fabricated citations. No false confidence. Safety-first design.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon"><i class="fas fa-microchip"></i></div>
+        <h3>Microservices Architecture</h3>
+        <p>Auth, Chat Orchestrator, Retrieval, and API Gateway run as independent services. Each testable, deployable, and scalable on its own.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon"><i class="fas fa-lock"></i></div>
+        <h3>JWT Authentication</h3>
+        <p>Secure token-based auth with bcrypt password hashing, refresh tokens, and role-based access. No plaintext passwords ever stored.</p>
+      </div>
+    </div>
+  </div>
+</section>
 
-    <script>
-        // Animate feature items on scroll
-        document.addEventListener('DOMContentLoaded', function() {
-            const featureItems = document.querySelectorAll('.feature-item');
-            
-            function checkScroll() {
-                featureItems.forEach((item, index) => {
-                    const itemPosition = item.getBoundingClientRect().top;
-                    const screenPosition = window.innerHeight / 1.3;
-                    
-                    if (itemPosition < screenPosition) {
-                        // Add staggered delay to create a cascade effect
-                        setTimeout(() => {
-                            item.classList.add('show');
-                        }, 150 * index);
-                    }
-                });
-            }
-            
-            window.addEventListener('scroll', checkScroll);
-            checkScroll(); // Initial check
-        });
-    </script>
+<!-- How it works -->
+<section class="how" id="how">
+  <div class="how-inner">
+    <div class="section-label">Pipeline</div>
+    <div class="section-title">From question to grounded answer</div>
+    <div class="how-steps">
+      <div class="how-step">
+        <div class="step-num">Step 01</div>
+        <h3>Patient describes symptoms</h3>
+        <p>Plain language input — no medical terminology required. "I have chest tightness and difficulty breathing."</p>
+      </div>
+      <div class="how-step">
+        <div class="step-num">Step 02</div>
+        <h3>Hybrid retrieval searches clinical docs</h3>
+        <p>BM25 matches exact terms. Vector search understands "difficulty breathing" means "dyspnea". RRF fuses both ranked lists.</p>
+      </div>
+      <div class="how-step">
+        <div class="step-num">Step 03</div>
+        <h3>Context injected into LLM prompt</h3>
+        <p>Top-ranked document chunks are prepended to the prompt. The model answers with both its training knowledge and retrieved evidence.</p>
+      </div>
+      <div class="how-step">
+        <div class="step-num">Step 04</div>
+        <h3>Grounded response with citations</h3>
+        <p>The answer includes source references. If no relevant documents were found, it says so honestly — no fabricated citations.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Contact -->
+<section class="contact" id="contact">
+  <div class="contact-inner">
+    <div class="section-label">Get in touch</div>
+    <div class="section-title">Contact us</div>
+    <p style="color:var(--text-dim);margin-top:-40px;margin-bottom:20px">Questions about OpenHealth? Reach out and we'll get back to you.</p>
+    <form class="contact-form" onsubmit="event.preventDefault();this.querySelector('button').textContent='Sent!';setTimeout(()=>this.querySelector('button').textContent='Send Message',2000)">
+      <div class="form-row">
+        <div class="form-group"><label>Name</label><input type="text" placeholder="Your name" required></div>
+        <div class="form-group"><label>Email</label><input type="email" placeholder="you@example.com" required></div>
+      </div>
+      <div class="form-group"><label>Subject</label><input type="text" placeholder="How can we help?"></div>
+      <div class="form-group"><label>Message</label><textarea placeholder="Tell us more..."></textarea></div>
+      <button type="submit" class="btn-primary" style="align-self:flex-start">Send Message</button>
+    </form>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-logo">
+      <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" style="width:20px;height:20px;color:var(--teal)"><path d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 9v6m-3-3h6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span>OpenHealth</span>
+    </div>
+    <div class="footer-links">
+      <a href="/">Home</a>
+      <a href="/ChatBot">ChatBot</a>
+      <a href="#contact">Contact</a>
+      <a href="/login">Sign In</a>
+    </div>
+    <div class="footer-copy">AI-generated medical guidance. Always consult a real doctor. &copy; 2026 OpenHealth</div>
+  </div>
+</footer>
+
+<script>
+// Navbar scroll
+window.addEventListener('scroll',()=>{document.getElementById('nav').classList.toggle('scrolled',window.scrollY>50)});
+
+// Typewriter effect
+const phrases=["I've been having chest pain that radiates to my back","My child has had a cough for 3 weeks","I have severe headaches and extreme fatigue","What are the warning signs of a heart attack?"];
+const response="Based on your symptoms and family history, I recommend an ECG and cardiac evaluation. Chest pain radiating to the back with a family history of heart disease warrants immediate investigation.";
+let phraseIdx=0,charIdx=0,deleting=false;
+const tw=document.getElementById('typewriter'),cur=document.getElementById('cursor'),respEl=document.getElementById('response'),respText=document.getElementById('responseText'),srcEl=document.getElementById('sources');
+function type(){
+  const phrase=phrases[phraseIdx];
+  if(!deleting){
+    tw.textContent=phrase.slice(0,charIdx++);
+    if(charIdx>phrase.length){
+      cur.style.display='none';
+      setTimeout(()=>{respEl.style.display='block';respText.textContent=response;srcEl.style.display='block'},800);
+      setTimeout(()=>{deleting=true;respEl.style.display='none';srcEl.style.display='none';cur.style.display='inline-block';charIdx=phrase.length;type()},6000);
+      return;
+    }
+    setTimeout(type,40+Math.random()*40);
+  }else{
+    tw.textContent=phrase.slice(0,charIdx--);
+    if(charIdx<0){deleting=false;charIdx=0;phraseIdx=(phraseIdx+1)%phrases.length;setTimeout(type,500);return;}
+    setTimeout(type,20);
+  }
+}
+setTimeout(type,1500);
+
+// Counter animation
+const counters=document.querySelectorAll('.stat-num');
+const counterObserver=new IntersectionObserver((entries)=>{entries.forEach(e=>{if(e.isIntersecting){animateCounter(e.target);counterObserver.unobserve(e.target)}})},{threshold:0.5});
+counters.forEach(c=>counterObserver.observe(c));
+function animateCounter(el){
+  const target=parseFloat(el.dataset.target);const suffix=el.dataset.suffix||'';const decimal=parseInt(el.dataset.decimal)||0;
+  const duration=2000;const start=performance.now();
+  function update(now){
+    const elapsed=now-start;const progress=Math.min(elapsed/duration,1);
+    const eased=1-Math.pow(1-progress,3);
+    el.textContent=(target*eased).toFixed(decimal).replace(/\.0$/,'')+suffix;
+    if(progress<1)requestAnimationFrame(update);
+    else el.textContent=target.toFixed(decimal).replace(/\.0$/,'')+suffix;
+  }
+  requestAnimationFrame(update);
+}
+
+// Scroll reveal
+const revealObserver=new IntersectionObserver((entries)=>{entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');revealObserver.unobserve(e.target)}})},{threshold:0.1,rootMargin:'0px 0px -50px 0px'});
+document.querySelectorAll('.feat-card,.how-step').forEach((el,i)=>{el.style.transitionDelay=`${i*0.1}s`;revealObserver.observe(el)});
+</script>
 </body>
 </html>

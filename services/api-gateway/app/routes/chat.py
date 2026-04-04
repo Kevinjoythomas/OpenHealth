@@ -24,7 +24,7 @@ def _forward(method: str, path: str, **kwargs) -> Response:
             method,
             url,
             headers=_downstream_headers(),
-            timeout=120,  # LLM calls can be slow
+            timeout=600,  # LLM calls can be slow — local GGUF can take several minutes
             **kwargs,
         )
     except requests.exceptions.ConnectionError:

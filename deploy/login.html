@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OpenHealth — Sign In</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Outfit:wght@200;300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#060a09;--surface:#111917;--surface-2:#162220;--border:#1e2d28;--teal:#00897B;--teal-dark:#00695C;--teal-glow:rgba(0,137,123,0.15);--text:#e2ede9;--text-dim:#8aa39b;--text-muted:#4a6660;--serif:'Instrument Serif',Georgia,serif;--sans:'Outfit',sans-serif;--mono:'JetBrains Mono',monospace}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;position:relative;overflow:hidden}
+body::before{content:'';position:fixed;top:-200px;left:50%;transform:translateX(-50%);width:900px;height:900px;background:radial-gradient(circle,var(--teal-glow) 0%,transparent 60%);pointer-events:none;animation:glow-pulse 6s ease-in-out infinite}
+@keyframes glow-pulse{0%,100%{opacity:0.3;transform:translateX(-50%) scale(1)}50%{opacity:0.5;transform:translateX(-50%) scale(1.1)}}
+
+/* Nav mini */
+.nav-mini{position:fixed;top:0;left:0;right:0;padding:20px clamp(20px,5vw,80px);display:flex;align-items:center;justify-content:space-between;z-index:10}
+.nav-mini a{display:flex;align-items:center;gap:8px;text-decoration:none}
+.nav-mini svg{width:24px;height:24px;color:var(--teal)}
+.nav-mini span{font-family:var(--serif);font-size:20px;color:var(--text)}
+.nav-mini .back{color:var(--text-muted);text-decoration:none;font-size:13px;transition:color 0.3s}
+.nav-mini .back:hover{color:var(--text)}
+
+/* Auth container */
+.auth-wrap{width:100%;max-width:900px;min-height:500px;display:grid;grid-template-columns:1fr 1fr;background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:0 40px 80px rgba(0,0,0,0.5);position:relative;
+  opacity:0;animation:fade-in 0.8s ease forwards 0.3s}
+@keyframes fade-in{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+
+/* Form panels */
+.form-panel{padding:48px 40px;display:flex;flex-direction:column;justify-content:center;transition:all 0.5s ease}
+.form-panel h1{font-family:var(--serif);font-size:32px;font-weight:400;margin-bottom:8px}
+.form-panel .subtitle{color:var(--text-dim);font-size:14px;margin-bottom:32px}
+.field{margin-bottom:16px}
+.field label{display:block;font-size:11px;color:var(--text-dim);font-family:var(--mono);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px}
+.field input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:13px 16px;color:var(--text);font-family:var(--sans);font-size:14px;outline:none;transition:border-color 0.3s}
+.field input:focus{border-color:var(--teal)}
+.field input::placeholder{color:var(--text-muted)}
+.submit-btn{width:100%;background:var(--teal);color:#fff;border:none;border-radius:8px;padding:14px;font-family:var(--sans);font-size:15px;font-weight:500;cursor:pointer;transition:all 0.3s;margin-top:8px}
+.submit-btn:hover{background:var(--teal-dark);transform:translateY(-1px);box-shadow:0 8px 30px rgba(0,137,123,0.3)}
+.submit-btn:disabled{opacity:0.6;cursor:not-allowed;transform:none}
+.error-msg{color:#ef4444;font-size:12px;min-height:18px;text-align:center;margin-top:8px;font-family:var(--mono)}
+
+/* Side panel (decorative/toggle) */
+.side-panel{background:linear-gradient(135deg,var(--surface-2),var(--bg));display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:48px 40px;position:relative;overflow:hidden}
+.side-panel::before{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:300px;height:300px;background:radial-gradient(circle,var(--teal-glow) 0%,transparent 70%);pointer-events:none}
+.side-panel h2{font-family:var(--serif);font-size:28px;font-weight:400;margin-bottom:12px;position:relative;z-index:1}
+.side-panel p{color:var(--text-dim);font-size:14px;max-width:260px;margin-bottom:28px;position:relative;z-index:1}
+.toggle-btn{background:transparent;color:var(--text);border:1px solid var(--border);border-radius:8px;padding:12px 28px;font-family:var(--sans);font-size:14px;font-weight:400;cursor:pointer;transition:all 0.3s;position:relative;z-index:1}
+.toggle-btn:hover{border-color:var(--teal);color:var(--teal)}
+
+/* State toggle */
+.auth-wrap[data-mode="signup"] .signin-panel{display:none}
+.auth-wrap[data-mode="signup"] .signup-panel{display:flex}
+.auth-wrap[data-mode="signup"] .side-signin{display:none}
+.auth-wrap[data-mode="signup"] .side-signup{display:flex}
+.auth-wrap[data-mode="signin"] .signup-panel{display:none}
+.auth-wrap[data-mode="signin"] .signin-panel{display:flex}
+.auth-wrap[data-mode="signin"] .side-signup{display:none}
+.auth-wrap[data-mode="signin"] .side-signin{display:flex}
+
+/* Mobile */
+@media(max-width:700px){
+  .auth-wrap{grid-template-columns:1fr;max-width:420px}
+  .side-panel{padding:28px;min-height:auto}
+  .form-panel{padding:32px 24px}
+  .side-panel{order:-1}
+}
+</style>
+</head>
+<body>
+
+<div class="nav-mini">
+  <a href="/">
+    <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 9v6m-3-3h6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span>OpenHealth</span>
+  </a>
+  <a href="/" class="back"><i class="fas fa-arrow-left" style="margin-right:6px"></i>Back to home</a>
+</div>
+
+<div class="auth-wrap" id="authWrap" data-mode="signin">
+  <!-- Sign In form -->
+  <div class="form-panel signin-panel">
+    <h1>Welcome back</h1>
+    <p class="subtitle">Sign in to continue your consultations</p>
+    <form onsubmit="return false">
+      <div class="field"><label>Email</label><input type="email" id="login-email" placeholder="you@example.com" required></div>
+      <div class="field"><label>Password</label><input type="password" id="login-password" placeholder="Enter password" required></div>
+      <p class="error-msg" id="login-error"></p>
+      <button class="submit-btn" id="login-btn" onclick="doLogin()">Sign In</button>
+    </form>
+  </div>
+
+  <!-- Sign Up form -->
+  <div class="form-panel signup-panel">
+    <h1>Create account</h1>
+    <p class="subtitle">Start your health journey with OpenHealth</p>
+    <form onsubmit="return false">
+      <div class="field"><label>Name</label><input type="text" id="signup-name" placeholder="Your name" required></div>
+      <div class="field"><label>Email</label><input type="email" id="signup-email" placeholder="you@example.com" required></div>
+      <div class="field"><label>Password</label><input type="password" id="signup-password" placeholder="Min 8 characters" required></div>
+      <p class="error-msg" id="signup-error"></p>
+      <button class="submit-btn" id="signup-btn" onclick="doSignup()">Create Account</button>
+    </form>
+  </div>
+
+  <!-- Side: show when signin -->
+  <div class="side-panel side-signin">
+    <h2>New here?</h2>
+    <p>Create an account and start getting medical guidance in minutes</p>
+    <button class="toggle-btn" onclick="document.getElementById('authWrap').dataset.mode='signup'">Create Account</button>
+  </div>
+
+  <!-- Side: show when signup -->
+  <div class="side-panel side-signup">
+    <h2>Already registered?</h2>
+    <p>Sign in to pick up where you left off</p>
+    <button class="toggle-btn" onclick="document.getElementById('authWrap').dataset.mode='signin'">Sign In</button>
+  </div>
+</div>
+
+<script>
+const API = 'https://nonsignificantly-untippled-mikaela.ngrok-free.dev';
+const HDR = { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' };
+
+function saveTokens(data) {
+    localStorage.setItem('access_token', data.access_token);
+    localStorage.setItem('refresh_token', data.refresh_token);
+}
+
+async function doLogin() {
+    const btn = document.getElementById('login-btn');
+    const errEl = document.getElementById('login-error');
+    errEl.textContent = '';
+    btn.disabled = true; btn.textContent = 'Signing in...';
+    try {
+        const res = await fetch(API + '/v1/auth/login', {
+            method: 'POST', headers: HDR,
+            body: JSON.stringify({
+                email: document.getElementById('login-email').value.trim(),
+                password: document.getElementById('login-password').value,
+            }),
+        });
+        const data = await res.json();
+        if (!res.ok) { errEl.textContent = data.error || 'Login failed'; return; }
+        saveTokens(data);
+        window.location.href = '/ChatBot';
+    } catch (e) {
+        errEl.textContent = 'Cannot reach server. Is it running?';
+    } finally {
+        btn.disabled = false; btn.textContent = 'Sign In';
+    }
+}
+
+async function doSignup() {
+    const btn = document.getElementById('signup-btn');
+    const errEl = document.getElementById('signup-error');
+    errEl.textContent = '';
+    btn.disabled = true; btn.textContent = 'Creating account...';
+    try {
+        const res = await fetch(API + '/v1/auth/signup', {
+            method: 'POST', headers: HDR,
+            body: JSON.stringify({
+                name: document.getElementById('signup-name').value.trim(),
+                email: document.getElementById('signup-email').value.trim(),
+                password: document.getElementById('signup-password').value,
+                role: 'doctor',
+            }),
+        });
+        const data = await res.json();
+        if (!res.ok) { errEl.textContent = data.error || 'Signup failed'; return; }
+        saveTokens(data);
+        window.location.href = '/ChatBot';
+    } catch (e) {
+        errEl.textContent = 'Cannot reach server. Is it running?';
+    } finally {
+        btn.disabled = false; btn.textContent = 'Create Account';
+    }
+}
+</script>
+</body>
+</html>

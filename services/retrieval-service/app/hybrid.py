@@ -12,7 +12,7 @@ from app.bm25 import bm25_search
 log = logging.getLogger(__name__)
 
 RRF_K = 60  # standard RRF constant
-_RETRIEVAL_TIMEOUT = 10.0  # seconds per retriever
+_RETRIEVAL_TIMEOUT = 30.0  # seconds per retriever — embedding model cold start can take ~15s
 
 
 def hybrid_search(query: str, top_k: int = 5) -> list[dict]:
