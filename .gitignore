@@ -72,3 +72,4 @@ data/
 # IDE
 .vscode/
 .idea/
+!vercel.json

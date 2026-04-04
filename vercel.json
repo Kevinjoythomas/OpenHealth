@@ -1,0 +1,8 @@
+{
+  "outputDirectory": "deploy",
+  "routes": [
+    { "src": "^/$", "dest": "/main.html" },
+    { "src": "^/chat$", "dest": "/ChatBot.html" },
+    { "src": "^/login$", "dest": "/login.html" }
+  ]
+}
