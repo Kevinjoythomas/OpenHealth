@@ -457,7 +457,73 @@
 <div class="max-w-7xl mx-auto">
 <h2 class="text-3xl font-bold text-center mb-16 reveal">Infrastructure Design</h2>
 <div class="bg-surface-container-lowest p-12 rounded-2xl shadow-[0px_12px_32px_rgba(23,29,26,0.04)] text-center relative reveal">
-<img alt="Architecture Diagram" class="mx-auto max-w-4xl w-full h-96 object-cover rounded-lg mb-8" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC6xRhvZ2e47QMlMMj8cMDoNpDiBlYh0dk3Ws_xEuYJWqHSNpWf5eAFLfkfYEorCZB7r8QkNlHDyFJ79wnY75Lvym2y-_1xJt6chcunFrIniPM-4apWp6METjIfwH-LOh0BK7DK0Y1wqdCnF3zAkhPVxfer5jhvWrcH7ZZQ1MzK986EYJZxIxpdYMkxXo3zao1iFSL-QBXK4kMIEb5w0kJ4rC1glQw8F1v3kI25MActntj1RssMn3pmjxXy062S1xUhuYP_xaU"/>
+<svg viewBox="0 0 800 492" xmlns="http://www.w3.org/2000/svg" class="mx-auto max-w-4xl w-full mb-8" style="font-family:Inter,sans-serif">
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#006b54"/>
+    </marker>
+  </defs>
+
+  <!-- Browser / Vercel -->
+  <rect x="250" y="8" width="300" height="50" rx="10" fill="#e9efeb" stroke="#bccac2" stroke-width="1.5"/>
+  <text x="400" y="29" text-anchor="middle" font-size="13" fill="#171d1a" font-weight="700">Browser</text>
+  <text x="400" y="47" text-anchor="middle" font-size="10" fill="#6d7a74">Vercel · Static HTML / CSS / JS</text>
+
+  <!-- Arrow: Browser → Gateway -->
+  <line x1="400" y1="58" x2="400" y2="90" stroke="#006b54" stroke-width="1.5" marker-end="url(#ah)"/>
+
+  <!-- API Gateway -->
+  <rect x="90" y="90" width="620" height="62" rx="10" fill="#006b54"/>
+  <text x="400" y="116" text-anchor="middle" font-size="14" fill="white" font-weight="700">API Gateway  :5000</text>
+  <text x="400" y="136" text-anchor="middle" font-size="11" fill="rgba(255,255,255,0.72)">JWT Validation · Rate Limiting (Redis / fakeredis) · Reverse Proxy</text>
+
+  <!-- Arrow: Gateway → Auth (diagonal left) -->
+  <line x1="210" y1="152" x2="185" y2="198" stroke="#006b54" stroke-width="1.5" marker-end="url(#ah)"/>
+  <!-- Arrow: Gateway → Chat (diagonal right) -->
+  <line x1="590" y1="152" x2="615" y2="198" stroke="#006b54" stroke-width="1.5" marker-end="url(#ah)"/>
+
+  <!-- Auth Service -->
+  <rect x="70" y="198" width="230" height="65" rx="10" fill="#1faf8b"/>
+  <text x="185" y="222" text-anchor="middle" font-size="12" fill="white" font-weight="700">Auth Service  :5001</text>
+  <text x="185" y="239" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.85)">Signup · Login · JWT Issue/Refresh</text>
+  <text x="185" y="255" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.60)">SQLite → Postgres</text>
+
+  <!-- Chat Orchestrator -->
+  <rect x="500" y="198" width="230" height="65" rx="10" fill="#1faf8b"/>
+  <text x="615" y="220" text-anchor="middle" font-size="12" fill="white" font-weight="700">Chat Orchestrator  :5002</text>
+  <text x="615" y="237" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.85)">Session History · RAG Prompt Builder</text>
+  <text x="615" y="254" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.60)">SQLite → Postgres · fakeredis → Redis</text>
+
+  <!-- Arrow: Chat → Retrieval -->
+  <line x1="615" y1="263" x2="615" y2="308" stroke="#006b54" stroke-width="1.5" marker-end="url(#ah)"/>
+
+  <!-- Retrieval Service -->
+  <rect x="390" y="308" width="450" height="80" rx="10" fill="#bdedd9" stroke="#1faf8b" stroke-width="1.5"/>
+  <text x="615" y="332" text-anchor="middle" font-size="13" fill="#003b2c" font-weight="700">Retrieval Service  :5003</text>
+  <text x="615" y="351" text-anchor="middle" font-size="11" fill="#3b6757">BM25 (keyword)  +  ChromaDB (vector)  →  RRF Fusion</text>
+  <text x="615" y="369" text-anchor="middle" font-size="10" fill="#6d7a74">nomic-embed-text · Top-K = 5 · relevance threshold ≥ 0.020</text>
+
+  <!-- Arrow: Retrieval → Ollama -->
+  <line x1="615" y1="388" x2="615" y2="420" stroke="#006b54" stroke-width="1.5" marker-end="url(#ah)"/>
+
+  <!-- Ollama -->
+  <rect x="390" y="420" width="450" height="60" rx="10" fill="#e9efeb" stroke="#bccac2" stroke-width="1.5"/>
+  <text x="615" y="445" text-anchor="middle" font-size="13" fill="#171d1a" font-weight="700">Ollama  (host inference)</text>
+  <text x="615" y="463" text-anchor="middle" font-size="10" fill="#6d7a74">Llama 3 8B · LoRA Fine-tuned (Unsloth) · GGUF Q4_K_M</text>
+
+  <!-- Left sidebar: data stores -->
+  <!-- ChromaDB / PDF label -->
+  <rect x="10" y="318" width="160" height="42" rx="8" fill="#e9efeb" stroke="#bccac2" stroke-width="1"/>
+  <text x="90" y="336" text-anchor="middle" font-size="10" fill="#3d4a44" font-weight="600">ChromaDB Vectors</text>
+  <text x="90" y="351" text-anchor="middle" font-size="9" fill="#6d7a74">27 PDFs · ~1,262 chunks</text>
+  <line x1="170" y1="339" x2="390" y2="345" stroke="#bccac2" stroke-width="1" stroke-dasharray="4,3"/>
+
+  <!-- Ingestion Worker label -->
+  <rect x="10" y="420" width="160" height="42" rx="8" fill="#e9efeb" stroke="#bccac2" stroke-width="1"/>
+  <text x="90" y="438" text-anchor="middle" font-size="10" fill="#3d4a44" font-weight="600">Ingestion Worker</text>
+  <text x="90" y="453" text-anchor="middle" font-size="9" fill="#6d7a74">Celery · RabbitMQ</text>
+  <line x1="170" y1="441" x2="390" y2="441" stroke="#bccac2" stroke-width="1" stroke-dasharray="4,3"/>
+</svg>
 <p class="text-on-surface-variant max-w-2xl mx-auto">
                     API Gateway (:5000) → Auth (:5001) · Chat Orchestrator (:5002) → Retrieval (:5003) → BM25 + ChromaDB + RRF → Ollama GGUF. Static frontend on Vercel, backend tunnelled via ngrok. Ingestion worker via Celery + RabbitMQ.
                 </p>
