@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>OpenHealth - Clinical AI Architecture</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary-fixed-variant": "#00513e",
+                        "on-surface": "#171d1a",
+                        "secondary": "#3b6757",
+                        "on-tertiary-container": "#641610",
+                        "surface-tint": "#006b54",
+                        "on-tertiary": "#ffffff",
+                        "on-background": "#171d1a",
+                        "on-secondary": "#ffffff",
+                        "surface-container-high": "#e3eae5",
+                        "inverse-surface": "#2b322f",
+                        "surface-container-highest": "#dee4df",
+                        "on-secondary-fixed-variant": "#224e40",
+                        "primary": "#006b54",
+                        "tertiary-fixed": "#ffdad5",
+                        "on-surface-variant": "#3d4a44",
+                        "on-secondary-fixed": "#002117",
+                        "on-primary": "#ffffff",
+                        "surface-container-low": "#eff5f0",
+                        "surface-container-lowest": "#ffffff",
+                        "on-primary-container": "#003b2c",
+                        "inverse-primary": "#5cdcb5",
+                        "inverse-on-surface": "#ecf2ed",
+                        "on-tertiary-fixed-variant": "#7f2a21",
+                        "on-primary-fixed": "#002117",
+                        "surface-bright": "#f5fbf6",
+                        "tertiary": "#9e4136",
+                        "surface-variant": "#dee4df",
+                        "error": "#ba1a1a",
+                        "tertiary-container": "#ea7b6d",
+                        "background": "#f5fbf6",
+                        "on-error-container": "#93000a",
+                        "primary-fixed-dim": "#5cdcb5",
+                        "secondary-fixed": "#bdedd9",
+                        "on-tertiary-fixed": "#410001",
+                        "primary-container": "#1faf8b",
+                        "secondary-container": "#bdedd9",
+                        "surface-container": "#e9efeb",
+                        "surface": "#f5fbf6",
+                        "on-error": "#ffffff",
+                        "secondary-fixed-dim": "#a2d0be",
+                        "outline-variant": "#bccac2",
+                        "tertiary-fixed-dim": "#ffb4a9",
+                        "error-container": "#ffdad6",
+                        "on-secondary-container": "#416d5d",
+                        "outline": "#6d7a74",
+                        "primary-fixed": "#7bf9d0",
+                        "surface-dim": "#d5dcd7"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "2xl": "1rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Inter"],
+                        "serif": ["Instrument Serif", "serif"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .clinical-gradient {
+            background: linear-gradient(135deg, #006b54 0%, #1faf8b 100%);
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(24px);
+        }
+        .mosaic-card {
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+        }
+        .mosaic-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+
+        /* Hero entrance animations */
+        @keyframes fadeUpIn {
+            from { opacity: 0; transform: translateY(22px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to   { opacity: 1; }
+        }
+        .hero-1 { animation: fadeUpIn 0.65s cubic-bezier(0.22,1,0.36,1) both; }
+        .hero-2 { animation: fadeUpIn 0.65s cubic-bezier(0.22,1,0.36,1) 0.12s both; }
+        .hero-3 { animation: fadeUpIn 0.65s cubic-bezier(0.22,1,0.36,1) 0.24s both; }
+        .hero-4 { animation: fadeUpIn 0.65s cubic-bezier(0.22,1,0.36,1) 0.36s both; }
+        .hero-5 { animation: fadeIn 0.9s ease 0.48s both; }
+
+        /* Scroll reveal */
+        .reveal {
+            opacity: 0;
+            transform: translateY(28px);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+        .reveal.visible { opacity: 1; transform: translateY(0); }
+        .reveal-delay-1 { transition-delay: 0.10s; }
+        .reveal-delay-2 { transition-delay: 0.20s; }
+        .reveal-delay-3 { transition-delay: 0.30s; }
+        .reveal-delay-4 { transition-delay: 0.40s; }
+
+        /* Animated progress bars */
+        .bar-fill { width: 0; transition: width 1.4s cubic-bezier(0.22,1,0.36,1); }
+        .bar-fill.running { width: var(--w); }
+    </style>
+</head>
+<body class="bg-background text-on-surface selection:bg-primary-container selection:text-on-primary-container">
+<!-- TopNavBar -->
+<nav class="fixed top-0 w-full z-50 bg-white/80 dark:bg-emerald-950/80 backdrop-blur-xl">
+<div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+<div class="flex items-center gap-8">
+<span class="text-xl font-bold tracking-tighter text-emerald-900 dark:text-emerald-50">OpenHealth</span>
+<div class="hidden md:flex items-center gap-6">
+<a class="text-emerald-700 dark:text-emerald-300 font-semibold border-b-2 border-emerald-500 pb-1" href="#">Home</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-emerald-600 transition-colors" href="#results">Results</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-emerald-600 transition-colors" href="#architecture">Architecture</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-emerald-600 transition-colors" href="https://github.com/Kevinjoythomas/OpenHealth" target="_blank">GitHub</a>
+</div>
+</div>
+<a href="ChatBot.html" class="bg-primary hover:opacity-80 text-white px-5 py-2 rounded-lg font-medium transition-all duration-150">
+            Launch App
+        </a>
+</div>
+</nav>
+<main class="pt-16">
+<!-- Hero Section -->
+<section class="relative px-6 pt-24 pb-20 overflow-hidden">
+<div class="max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-16">
+<div class="flex-1 space-y-8">
+<div class="hero-1 inline-flex items-center gap-2 px-3 py-1 bg-secondary-container text-on-secondary-container rounded-full text-sm font-medium">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">science</span>
+                    LoRA Fine-tuned · 112K Clinical Consultations
+                </div>
+<h1 class="hero-2 text-5xl md:text-6xl font-extrabold tracking-tight text-on-surface leading-[1.1]">
+                    AI-powered medical guidance, grounded in <span class="text-primary">real clinical data</span>
+</h1>
+<p class="hero-3 text-lg text-on-surface-variant max-w-2xl leading-relaxed">
+                    Llama 3 8B LoRA-adapted on 112K real patient-doctor consultations, served through a hybrid BM25 + vector RAG pipeline. Evaluated across 8 clinical test cases — achieving 7.25/8 rubric score and +94.3% ROUGE-2 improvement.
+                </p>
+<div class="hero-4 flex flex-wrap gap-4">
+<a href="ChatBot.html" class="clinical-gradient text-on-primary px-8 py-4 rounded-lg font-bold shadow-lg hover:brightness-110 transition-all">
+                        Try Live Demo
+                    </a>
+<a href="#architecture" class="bg-surface-container-high text-on-surface px-8 py-4 rounded-lg font-bold hover:bg-surface-variant transition-all">
+                        View Architecture
+                    </a>
+</div>
+</div>
+<div class="hero-5 flex-1 w-full max-w-2xl">
+<div class="bg-surface-container rounded-xl p-4 aspect-video relative group overflow-hidden">
+<img alt="System Interface" class="w-full h-full object-cover rounded-lg" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAmGue4vCsol4gddqzYjYdg_C78YMnJlS1Xae8dGvtx9s99t9bkk_WQtXg78qeO4hs5X7zvxPe1H1IFRI2Kams3RLEG1G_AVaUiWQYX5ihrNlKFi-i92ZsxSUunEPQxRo0nCIn7-koMhRpbqnlXkrTt4gPGk0mtya12cufwfxPUpVRNGj1p3jW6gSgMqrw-CtYH5-D1gaYeWHNc218aUX-yCF25084oOWZS1hR4hcIIl3Lp-CiIm1N-6vQHIOxUMW2xzZ_Qtk7zYa8"/>
+<div class="absolute inset-0 bg-primary/10 group-hover:bg-transparent transition-all duration-500"></div>
+</div>
+</div>
+</div>
+</section>
+<!-- Stat Mosaic Section -->
+<section id="results" class="py-24 px-6 bg-surface-container-low">
+<div class="max-w-7xl mx-auto">
+<div class="mb-16 text-center max-w-3xl mx-auto reveal">
+<h2 class="text-4xl font-bold tracking-tight text-on-surface leading-tight mb-4">
+                    Medical AI with measurable <span class="font-serif italic text-primary">quality</span>, <span class="font-serif italic text-primary">safety</span>, and system design — all in one platform
+                </h2>
+<p class="text-on-surface-variant">
+                    Evaluated end-to-end across rubric scoring, ROUGE-N metrics, and retrieval latency. Every number below is from our actual benchmark runs.
+                </p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-12 gap-6 auto-rows-[240px]">
+<!-- Card 1: Clinical Training Scale -->
+<div class="md:col-span-5 mosaic-card reveal bg-surface-container-lowest p-8 rounded-2xl border border-outline-variant/30 flex flex-col justify-between overflow-hidden relative group">
+<div class="relative z-10">
+<span class="text-primary font-bold text-sm tracking-wider uppercase mb-2 block">Llama 3 8B + LoRA (Unsloth)</span>
+<h3 class="text-2xl font-bold text-on-surface mb-2">Clinical Training Scale</h3>
+<p class="text-on-surface-variant text-sm leading-relaxed max-w-[280px]">112K real patient-doctor consultations (ChatDoctor-HealthCareMagic-100k) used to LoRA adapt the model. rank=8, alpha=16, 20.97M trainable params.</p>
+</div>
+<div class="absolute bottom-[-10%] right-[-5%] w-1/2 h-2/3 opacity-20 group-hover:opacity-40 transition-opacity">
+<span class="material-symbols-outlined text-[120px] text-primary" style="font-variation-settings: 'FILL' 1;">medical_services</span>
+</div>
+</div>
+<!-- Card 2: Retrieval Quality -->
+<div class="md:col-span-4 mosaic-card reveal reveal-delay-1 bg-primary-container/30 p-8 rounded-2xl border border-primary/10 flex flex-col justify-between overflow-hidden relative">
+<div>
+<span class="text-on-primary-container font-bold text-sm tracking-wider uppercase mb-2 block">2 retrieval strategies</span>
+<h3 class="text-2xl font-bold text-on-primary-container mb-2">Hybrid RAG Retrieval</h3>
+<p class="text-on-primary-container/80 text-sm leading-relaxed">BM25 keyword + ChromaDB vector search run concurrently. Fused via RRF. Relevance threshold (≥ 0.020) filters out low-confidence sources.</p>
+</div>
+<div class="mt-4 flex gap-1">
+<div class="h-1 flex-1 bg-primary rounded-full"></div>
+<div class="h-1 flex-1 bg-primary rounded-full"></div>
+<div class="h-1 flex-1 bg-primary/20 rounded-full"></div>
+</div>
+</div>
+<!-- Card 3: Backend Architecture -->
+<div class="md:col-span-3 mosaic-card reveal reveal-delay-2 bg-secondary-container/20 p-8 rounded-2xl border border-secondary/10 flex flex-col justify-between relative">
+<div>
+<span class="text-secondary font-bold text-sm tracking-wider uppercase mb-2 block">API Gateway + 3 services</span>
+<h3 class="text-xl font-bold text-on-surface mb-2 leading-tight">Backend Architecture</h3>
+<p class="text-on-surface-variant text-xs leading-relaxed">Auth, Chat Orchestrator, Retrieval, and API Gateway — all independently deployable Flask services.</p>
+</div>
+<span class="material-symbols-outlined text-4xl text-secondary">hub</span>
+</div>
+<!-- Card 4: Safety Improvement -->
+<div class="md:col-span-3 mosaic-card reveal reveal-delay-1 bg-on-surface p-8 rounded-2xl flex flex-col justify-between text-surface relative">
+<div>
+<span class="text-primary-fixed-dim font-bold text-sm tracking-wider uppercase mb-2 block">8-point rubric</span>
+<h3 class="text-xl font-bold mb-2 leading-tight">Safety Improvement</h3>
+<p class="text-surface-variant text-xs leading-relaxed">Full RAG pipeline correctly escalated all 4 emergency test cases the base model failed.</p>
+</div>
+<span class="material-symbols-outlined text-4xl text-primary-fixed-dim" style="font-variation-settings: 'FILL' 1;">verified_user</span>
+</div>
+<!-- Card 5: Evaluation Gains -->
+<div class="md:col-span-5 mosaic-card reveal reveal-delay-2 clinical-gradient p-8 rounded-2xl text-on-primary flex flex-col justify-between overflow-hidden relative group">
+<div>
+<span class="text-white/80 font-bold text-sm tracking-wider uppercase mb-2 block">+26.7% ROUGE-1 on unseen data</span>
+<h3 class="text-3xl font-bold mb-3">Evaluation Gains</h3>
+<p class="text-white/90 text-sm leading-relaxed max-w-md">7.25/8 with full RAG pipeline vs 6.12/8 base model. ROUGE-2 improved +94.3% on 50 unseen clinical consultation samples.</p>
+</div>
+<div class="absolute right-8 bottom-8 flex items-baseline gap-2">
+<span class="text-5xl font-black" data-counter data-target="7.25" data-decimals="2">7.25</span>
+<span class="text-xl opacity-60">/ 8.0</span>
+</div>
+</div>
+<!-- Card 6: Real-time Product -->
+<div class="md:col-span-4 mosaic-card reveal reveal-delay-3 bg-surface-container-highest p-8 rounded-2xl border border-outline-variant/30 flex flex-col justify-between relative group">
+<div>
+<span class="text-on-surface-variant font-bold text-sm tracking-wider uppercase mb-2 block">Frontend on Vercel</span>
+<h3 class="text-2xl font-bold text-on-surface mb-2">Live Deployment</h3>
+<p class="text-on-surface-variant text-sm leading-relaxed">Static frontend deployed on Vercel. Backend served via ngrok tunnel with JWT-secured API gateway.</p>
+</div>
+<div class="absolute bottom-0 right-8 transform translate-y-2 group-hover:translate-y-0 transition-transform">
+<span class="material-symbols-outlined text-5xl text-primary/40">devices</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Trust Bar -->
+<section class="bg-surface-container-low py-12">
+<div class="max-w-7xl mx-auto px-6">
+<div class="grid grid-cols-1 md:grid-cols-3 gap-8 items-center border-y border-outline-variant/20 py-8">
+<div class="flex items-center gap-4 px-6 border-r border-outline-variant/20">
+<span class="text-4xl font-bold text-primary" data-counter data-target="112" data-suffix="K">0K</span>
+<span class="text-sm font-label text-on-surface-variant leading-tight uppercase tracking-widest">Clinical<br/>Consultations</span>
+</div>
+<div class="flex items-center gap-4 px-6 border-r border-outline-variant/20">
+<span class="text-4xl font-bold text-primary">Hybrid</span>
+<span class="text-sm font-label text-on-surface-variant leading-tight uppercase tracking-widest">BM25 + Vector<br/>RAG with RRF</span>
+</div>
+<div class="flex items-center gap-4 px-6">
+<span class="text-4xl font-bold text-primary">Micro</span>
+<span class="text-sm font-label text-on-surface-variant leading-tight uppercase tracking-widest">Service<br/>Architecture</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Value Props (Bento Style) -->
+<section class="py-24 px-6">
+<div class="max-w-7xl mx-auto">
+<div class="mb-16 text-center reveal">
+<h2 class="text-3xl font-bold text-on-surface tracking-tight">Technical Foundations</h2>
+<p class="text-on-surface-variant mt-2">Engineered for precision, reproducibility, and clinical safety.</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+<div class="md:col-span-8 reveal bg-surface-container-lowest p-10 rounded-xl shadow-[0px_12px_32px_rgba(23,29,26,0.06)] flex flex-col justify-between">
+<div>
+<span class="material-symbols-outlined text-primary text-4xl mb-6">psychology</span>
+<h3 class="text-2xl font-bold mb-4">Fine-tuned Medical Model</h3>
+<p class="text-on-surface-variant leading-relaxed max-w-xl">
+                            LoRA fine-tuned Llama 3 8B (rank=8, alpha=16, 20.97M trainable params — 0.26% of total) on 112K real patient-doctor consultations. Trained via Unsloth for efficiency. Training loss: 3.74 → 2.19 over 1,000 steps. GGUF Q4_K_M quantized and served via Ollama.
+                        </p>
+</div>
+<div class="mt-8 flex gap-4">
+<span class="px-3 py-1 bg-secondary-container text-on-secondary-container rounded-full text-xs font-bold uppercase tracking-tighter">Llama 3 8B Base</span>
+<span class="px-3 py-1 bg-secondary-container text-on-secondary-container rounded-full text-xs font-bold uppercase tracking-tighter">ChatDoctor-100K</span>
+<span class="px-3 py-1 bg-secondary-container text-on-secondary-container rounded-full text-xs font-bold uppercase tracking-tighter">Unsloth LoRA</span>
+</div>
+</div>
+<div class="md:col-span-4 reveal reveal-delay-1 bg-primary text-on-primary p-10 rounded-xl flex flex-col justify-between">
+<span class="material-symbols-outlined text-4xl mb-6" style="font-variation-settings: 'FILL' 1;">database</span>
+<h3 class="text-2xl font-bold mb-4">Hybrid Retrieval</h3>
+<p class="text-primary-fixed leading-relaxed opacity-90">
+                        BM25 and ChromaDB vector search run concurrently via ThreadPoolExecutor, fused via Reciprocal Rank Fusion. Latency matches vector-only (parallel, not sequential).
+                    </p>
+</div>
+<div class="md:col-span-4 reveal reveal-delay-2 bg-surface-container-low p-10 rounded-xl border border-outline-variant/10">
+<span class="material-symbols-outlined text-secondary text-4xl mb-6">dns</span>
+<h3 class="text-2xl font-bold mb-4">Microservices</h3>
+<p class="text-on-surface-variant leading-relaxed">
+                        4 Flask services — API Gateway, Auth, Chat Orchestrator, and Retrieval — each independently deployable. SQLite + fakeredis in dev, Postgres + Redis in production.
+                    </p>
+</div>
+<div class="md:col-span-8 reveal reveal-delay-1 bg-surface-container-lowest p-1 rounded-xl shadow-[0px_12px_32px_rgba(23,29,26,0.06)] group overflow-hidden">
+<img alt="Architecture" class="w-full h-64 object-cover rounded-lg group-hover:scale-105 transition-transform duration-700" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAQ_2qvePYHgVHtqgmyCechnbqfo7SxThtHWcojkLbIVyBqkUmaBe1zSucpt6ImEhorCZB7r8QkNlHDyFJ79wnY75Lvym2y-_1xJt6chcunFrIniPM-4apWp6METjIfwH-LOh0BK7DK0Y1wqdCnF3zAkhPVxfer5jhvWrcH7ZZQ1MzK986EYJZxIxpdYMkxXo3zao1iFSL-QBXK4kMIEb5w0kJ4rC1glQw8F1v3kI25MActntj1RssMn3pmjxXy062S1xUhuYP_xaU"/>
+</div>
+</div>
+</div>
+</section>
+<!-- How It Works -->
+<section class="py-24 bg-surface-container">
+<div class="max-w-7xl mx-auto px-6">
+<h2 class="text-3xl font-bold text-center mb-16 reveal">The Response Pipeline</h2>
+<div class="grid grid-cols-1 md:grid-cols-4 gap-4 relative">
+<!-- Steps -->
+<div class="reveal p-8 bg-surface-container-lowest rounded-lg relative z-10">
+<span class="text-5xl font-black text-primary/10 absolute top-4 right-4">01</span>
+<h4 class="font-bold text-lg mb-2">User Query</h4>
+<p class="text-sm text-on-surface-variant">Natural language symptoms sent to API Gateway. JWT validated, rate limited, forwarded to Chat Orchestrator.</p>
+</div>
+<div class="reveal reveal-delay-1 p-8 bg-surface-container-lowest rounded-lg relative z-10">
+<span class="text-5xl font-black text-primary/10 absolute top-4 right-4">02</span>
+<h4 class="font-bold text-lg mb-2">Hybrid Search</h4>
+<p class="text-sm text-on-surface-variant">Retrieval Service runs BM25 + ChromaDB in parallel. Top-5 docs fused with RRF scoring.</p>
+</div>
+<div class="reveal reveal-delay-2 p-8 bg-surface-container-lowest rounded-lg relative z-10">
+<span class="text-5xl font-black text-primary/10 absolute top-4 right-4">03</span>
+<h4 class="font-bold text-lg mb-2">Context Injection</h4>
+<p class="text-sm text-on-surface-variant">Only docs above relevance threshold (RRF ≥ 0.020) are injected. Low-confidence sources filtered out.</p>
+</div>
+<div class="reveal reveal-delay-3 p-8 bg-surface-container-lowest rounded-lg relative z-10">
+<span class="text-5xl font-black text-primary/10 absolute top-4 right-4">04</span>
+<h4 class="font-bold text-lg mb-2">LLM Response</h4>
+<p class="text-sm text-on-surface-variant">Fine-tuned Llama 3 8B generates clinical guidance via Ollama. Sources cited when retrieval is confident.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Performance / Metrics -->
+<section class="py-24 px-6">
+<div class="max-w-7xl mx-auto">
+<div class="flex flex-col lg:flex-row gap-16 items-center">
+<div class="flex-1 reveal">
+<h2 class="text-4xl font-bold tracking-tight mb-6">Model Benchmarking</h2>
+<p class="text-on-surface-variant mb-8 leading-relaxed">
+                        Evaluated across 8 real clinical test cases using a 4-axis rubric (factual, tone, conciseness, safety) and ROUGE-N on 50-sample memorisation + generalisation splits.
+                    </p>
+<div class="bg-primary-container/20 p-8 rounded-xl border-l-4 border-primary">
+<span class="text-6xl font-black text-primary" data-counter data-target="94.3" data-decimals="1" data-prefix="+" data-suffix="%">+94.3%</span>
+<p class="text-on-primary-container font-bold mt-2">ROUGE-2 Score Gain</p>
+<p class="text-sm text-on-surface-variant mt-1">Fine-tuned vs base Llama 3 on 50 unseen clinical consultation samples (generalisation split).</p>
+</div>
+</div>
+<div class="flex-1 w-full overflow-hidden rounded-xl border border-outline-variant/20 shadow-sm reveal reveal-delay-1">
+<table class="w-full text-left bg-white">
+<thead class="bg-surface-container">
+<tr>
+<th class="px-6 py-4 font-bold text-sm">Model Configuration</th>
+<th class="px-6 py-4 font-bold text-sm">Rubric Score</th>
+<th class="px-6 py-4 font-bold text-sm">ROUGE-1 (Unseen)</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/10">
+<tr>
+<td class="px-6 py-4 text-sm font-medium">Base Llama 3 8B</td>
+<td class="px-6 py-4 text-sm text-on-surface-variant">6.12 / 8</td>
+<td class="px-6 py-4 text-sm text-on-surface-variant">0.258</td>
+</tr>
+<tr>
+<td class="px-6 py-4 text-sm font-medium">Fine-tuned Only</td>
+<td class="px-6 py-4 text-sm text-on-surface-variant">6.75 / 8</td>
+<td class="px-6 py-4 text-sm text-on-surface-variant">0.327</td>
+</tr>
+<tr class="bg-surface-container-low">
+<td class="px-6 py-4 text-sm font-bold text-primary">Fine-tuned + Hybrid RAG</td>
+<td class="px-6 py-4 text-sm font-bold text-primary">7.25 / 8</td>
+<td class="px-6 py-4 text-sm font-bold text-primary">0.327 + safety ✓</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</section>
+<!-- Safety & Reliability -->
+<section class="py-24 bg-on-surface text-surface">
+<div class="max-w-7xl mx-auto px-6">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-20">
+<div class="reveal">
+<h2 class="text-3xl font-bold mb-6">Safety Framework</h2>
+<ul class="space-y-6">
+<li class="flex gap-4">
+<span class="material-symbols-outlined text-primary-fixed">verified_user</span>
+<div>
+<h4 class="font-bold text-lg">Emergency Escalation Scoring</h4>
+<p class="text-surface-variant opacity-80 text-sm">Rubric axis dedicated to safety referrals. Full pipeline scored 2/2 on all 4 safety-required test cases — chest pain, suspected TIAs, polypharmacy, and complex diabetes.</p>
+</div>
+</li>
+<li class="flex gap-4">
+<span class="material-symbols-outlined text-primary-fixed">history_edu</span>
+<div>
+<h4 class="font-bold text-lg">Grounded Source Citation</h4>
+<p class="text-surface-variant opacity-80 text-sm">Sources are only cited when RRF score ≥ 0.020, meaning both BM25 and vector search agreed on the document. Low-confidence retrieval falls back to model training knowledge.</p>
+</div>
+</li>
+<li class="flex gap-4">
+<span class="material-symbols-outlined text-primary-fixed">health_and_safety</span>
+<div>
+<h4 class="font-bold text-lg">Relevance Threshold Filtering</h4>
+<p class="text-surface-variant opacity-80 text-sm">Prevents hallucinated citations. When the corpus lacks coverage, the model answers from fine-tuning rather than injecting irrelevant PDF chunks.</p>
+</div>
+</li>
+</ul>
+</div>
+<div class="reveal reveal-delay-1 bg-surface/5 p-8 rounded-xl border border-surface/10 backdrop-blur-sm">
+<h4 class="text-primary-fixed font-bold mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined">analytics</span>
+                        Evaluation Summary
+                    </h4>
+<div class="space-y-4">
+<div class="flex justify-between text-sm">
+<span>Emergency Cases Correctly Escalated</span>
+<span class="text-primary-fixed">4 / 4</span>
+</div>
+<div class="w-full bg-surface/10 h-1.5 rounded-full overflow-hidden">
+<div class="bar-fill bg-primary h-full" style="--w: 100%"></div>
+</div>
+<div class="flex justify-between text-sm">
+<span>Full Pipeline Rubric Score</span>
+<span class="text-primary-fixed">7.25 / 8</span>
+</div>
+<div class="w-full bg-surface/10 h-1.5 rounded-full overflow-hidden">
+<div class="bar-fill bg-primary h-full" style="--w: 91%"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Architecture Diagram Area -->
+<section id="architecture" class="py-24 px-6 bg-surface-container-low">
+<div class="max-w-7xl mx-auto">
+<h2 class="text-3xl font-bold text-center mb-16 reveal">Infrastructure Design</h2>
+<div class="bg-surface-container-lowest p-12 rounded-2xl shadow-[0px_12px_32px_rgba(23,29,26,0.04)] text-center relative reveal">
+<img alt="Architecture Diagram" class="mx-auto max-w-4xl w-full h-96 object-cover rounded-lg mb-8" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC6xRhvZ2e47QMlMMj8cMDoNpDiBlYh0dk3Ws_xEuYJWqHSNpWf5eAFLfkfYEorCZB7r8QkNlHDyFJ79wnY75Lvym2y-_1xJt6chcunFrIniPM-4apWp6METjIfwH-LOh0BK7DK0Y1wqdCnF3zAkhPVxfer5jhvWrcH7ZZQ1MzK986EYJZxIxpdYMkxXo3zao1iFSL-QBXK4kMIEb5w0kJ4rC1glQw8F1v3kI25MActntj1RssMn3pmjxXy062S1xUhuYP_xaU"/>
+<p class="text-on-surface-variant max-w-2xl mx-auto">
+                    API Gateway (:5000) → Auth (:5001) · Chat Orchestrator (:5002) → Retrieval (:5003) → BM25 + ChromaDB + RRF → Ollama GGUF. Static frontend on Vercel, backend tunnelled via ngrok. Ingestion worker via Celery + RabbitMQ.
+                </p>
+</div>
+</div>
+</section>
+<!-- Tech Stack -->
+<section class="py-16 border-y border-outline-variant/10">
+<div class="max-w-7xl mx-auto px-6 overflow-hidden">
+<div class="flex flex-wrap justify-center gap-12 grayscale opacity-60 hover:grayscale-0 transition-all duration-500">
+<div class="flex items-center gap-2 font-bold text-xl"><span class="material-symbols-outlined text-primary">terminal</span> Llama 3 8B</div>
+<div class="flex items-center gap-2 font-bold text-xl"><span class="material-symbols-outlined text-primary">data_array</span> ChromaDB</div>
+<div class="flex items-center gap-2 font-bold text-xl"><span class="material-symbols-outlined text-primary">memory</span> Ollama</div>
+<div class="flex items-center gap-2 font-bold text-xl"><span class="material-symbols-outlined text-primary">bolt</span> Unsloth</div>
+<div class="flex items-center gap-2 font-bold text-xl"><span class="material-symbols-outlined text-primary">api</span> Flask</div>
+</div>
+</div>
+</section>
+<!-- Developer Build -->
+<section class="py-24 px-6 bg-surface-container-highest/30">
+<div class="max-w-4xl mx-auto text-center">
+<span class="inline-block px-4 py-1 bg-on-surface text-surface rounded mb-6 text-xs font-mono">REST API · Open Source</span>
+<h2 class="text-3xl font-bold mb-6 reveal">Designed for Extensibility</h2>
+<p class="text-on-surface-variant mb-10 leading-relaxed reveal reveal-delay-1">
+                OpenHealth exposes a clean REST API across 4 services. Swap Ollama for any model backend, ChromaDB for any vector store, or BM25 for any keyword retriever with minimal config changes. Runs locally without Docker — SQLite and fakeredis substitute automatically in dev mode.
+            </p>
+<div class="reveal reveal-delay-2 bg-on-surface p-6 rounded-lg text-left overflow-x-auto shadow-2xl">
+<pre class="text-primary-fixed-dim text-sm font-mono"><code>import requests
+
+# Send a clinical query to the OpenHealth API
+token = "your_jwt_token"
+session_id = "your_session_id"
+
+response = requests.post(
+    f"http://localhost:5000/v1/chat/sessions/{session_id}/messages",
+    headers={"Authorization": f"Bearer {token}"},
+    json={"message": "I have chest pain radiating to my left arm"}
+)
+
+data = response.json()
+print(data["answer"])   # RAG-grounded clinical response
+# Sources: Chest Pain Protocol (RRF: 0.031), ACS Guidelines (RRF: 0.028)</code></pre>
+</div>
+</div>
+</section>
+<!-- Final CTA -->
+<section class="py-24 px-6 text-center">
+<div class="max-w-4xl mx-auto reveal">
+<h2 class="text-4xl font-bold tracking-tight mb-8 text-on-surface">Explore the future of medical AI systems</h2>
+<div class="flex flex-wrap justify-center gap-4">
+<a href="ChatBot.html" class="clinical-gradient text-on-primary px-10 py-5 rounded-lg font-bold shadow-xl hover:scale-[1.02] transition-all">
+                    Launch Live Demo
+                </a>
+<a href="https://github.com/Kevinjoythomas/OpenHealth" target="_blank" class="bg-surface-container text-on-surface px-10 py-5 rounded-lg font-bold border border-outline-variant/30 hover:bg-surface-container-high transition-all flex items-center gap-2">
+<span class="material-symbols-outlined">code</span> GitHub
+                </a>
+<a href="https://github.com/Kevinjoythomas/OpenHealth/tree/main/docs" target="_blank" class="bg-surface-container text-on-surface px-10 py-5 rounded-lg font-bold border border-outline-variant/30 hover:bg-surface-container-high transition-all">
+                    Documentation
+                </a>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="bg-slate-50 dark:bg-slate-950 w-full border-t border-emerald-100/20">
+<div class="max-w-7xl mx-auto px-6 py-12 flex flex-col md:flex-row justify-between items-center gap-6">
+<div class="space-y-2 text-center md:text-left">
+<span class="font-bold text-emerald-900 dark:text-emerald-50 text-lg">OpenHealth</span>
+<p class="text-sm font-medium leading-relaxed text-slate-500">© 2025 OpenHealth AI. Clinical Precision.</p>
+</div>
+<div class="flex flex-wrap justify-center gap-8">
+<a class="text-slate-500 dark:text-slate-400 hover:text-emerald-600 text-sm font-medium transition-colors duration-200" href="https://github.com/Kevinjoythomas/OpenHealth" target="_blank">GitHub</a>
+<a class="text-slate-500 dark:text-slate-400 hover:text-emerald-600 text-sm font-medium transition-colors duration-200" href="https://github.com/Kevinjoythomas/OpenHealth/tree/main/docs" target="_blank">Docs</a>
+<a class="text-slate-500 dark:text-slate-400 hover:text-emerald-600 text-sm font-medium transition-colors duration-200" href="model_eval_report.html">Evaluation Report</a>
+<a class="text-slate-500 dark:text-slate-400 hover:text-emerald-600 text-sm font-medium transition-colors duration-200" href="retrieval_report.html">Retrieval Report</a>
+</div>
+</div>
+</footer>
+
+<script>
+// ── Scroll reveal ──────────────────────────────────────────────────────────
+const revealObs = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+        if (e.isIntersecting) { e.target.classList.add('visible'); }
+    });
+}, { threshold: 0.10, rootMargin: '0px 0px -40px 0px' });
+document.querySelectorAll('.reveal').forEach(el => revealObs.observe(el));
+
+// ── Animated progress bars ────────────────────────────────────────────────
+const barObs = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+        if (e.isIntersecting) {
+            e.target.classList.add('running');
+            barObs.unobserve(e.target);
+        }
+    });
+}, { threshold: 0.5 });
+document.querySelectorAll('.bar-fill').forEach(el => barObs.observe(el));
+
+// ── Number counters ────────────────────────────────────────────────────────
+function animateCount(el) {
+    const target   = parseFloat(el.dataset.target);
+    const decimals = parseInt(el.dataset.decimals || 0);
+    const suffix   = el.dataset.suffix  || '';
+    const prefix   = el.dataset.prefix  || '';
+    const duration = 1800;
+    const t0       = performance.now();
+    (function tick(now) {
+        const p    = Math.min((now - t0) / duration, 1);
+        const ease = 1 - Math.pow(1 - p, 3);
+        const val  = ease * target;
+        el.textContent = prefix + (decimals ? val.toFixed(decimals) : Math.floor(val).toLocaleString()) + suffix;
+        if (p < 1) requestAnimationFrame(tick);
+    })(t0);
+}
+const cntObs = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+        if (e.isIntersecting) { animateCount(e.target); cntObs.unobserve(e.target); }
+    });
+}, { threshold: 0.5 });
+document.querySelectorAll('[data-counter]').forEach(el => cntObs.observe(el));
+
+// ── Smooth scroll for anchor links ────────────────────────────────────────
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+        const target = document.querySelector(a.getAttribute('href'));
+        if (target) { e.preventDefault(); target.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+    });
+});
+</script>
+</body></html>
