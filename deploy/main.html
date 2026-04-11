@@ -129,6 +129,10 @@
         /* Animated progress bars */
         .bar-fill { width: 0; transition: width 1.4s cubic-bezier(0.22,1,0.36,1); }
         .bar-fill.running { width: var(--w); }
+
+        /* Terminal cursor */
+        @keyframes termBlink { 0%,100%{opacity:1} 50%{opacity:0} }
+        .term-cursor { display:inline-block; width:8px; height:14px; background:#00897B; vertical-align:middle; margin-left:2px; animation:termBlink 1s step-end infinite; }
     </style>
 </head>
 <body class="bg-background text-on-surface selection:bg-primary-container selection:text-on-primary-container">
@@ -550,22 +554,27 @@
 <p class="text-on-surface-variant mb-10 leading-relaxed reveal reveal-delay-1">
                 OpenHealth exposes a clean REST API across 4 services. Swap Ollama for any model backend, ChromaDB for any vector store, or BM25 for any keyword retriever with minimal config changes. Runs locally without Docker — SQLite and fakeredis substitute automatically in dev mode.
             </p>
-<div class="reveal reveal-delay-2 bg-on-surface p-6 rounded-lg text-left overflow-x-auto shadow-2xl">
-<pre class="text-primary-fixed-dim text-sm font-mono"><code>import requests
-
-# Send a clinical query to the OpenHealth API
-token = "your_jwt_token"
-session_id = "your_session_id"
-
-response = requests.post(
-    f"http://localhost:5000/v1/chat/sessions/{session_id}/messages",
-    headers={"Authorization": f"Bearer {token}"},
-    json={"message": "I have chest pain radiating to my left arm"}
-)
-
-data = response.json()
-print(data["answer"])   # RAG-grounded clinical response
-# Sources: Chest Pain Protocol (RRF: 0.031), ACS Guidelines (RRF: 0.028)</code></pre>
+<div class="reveal reveal-delay-2 rounded-xl overflow-hidden shadow-2xl" style="border:1px solid #1e2a25">
+  <!-- Mac title bar -->
+  <div style="display:flex;align-items:center;gap:8px;padding:11px 16px;background:#0d1210;border-bottom:1px solid #1e2a25">
+    <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ff5f56"></span>
+    <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ffbd2e"></span>
+    <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#27c93f"></span>
+  </div>
+  <!-- Terminal body -->
+  <div style="background:#111317;padding:22px 26px 26px;font-family:'JetBrains Mono','Fira Code','Courier New',monospace;font-size:13px;line-height:1.7;text-align:left">
+    <div style="margin-bottom:10px">
+      <span style="color:#00897B">patient &gt;</span>
+      <span style="color:#d4d4d4" id="mainTermTyped"></span><span class="term-cursor" id="mainTermCursor"></span>
+    </div>
+    <div id="mainTermResponse" style="display:none;margin-bottom:10px">
+      <span style="color:#00897B">doctor &gt;</span>
+      <span style="color:#9e9e9e"> This presentation warrants urgent evaluation. Chest pain radiating to the left arm with cardiac history is consistent with possible ACS. Seek emergency care immediately.</span>
+    </div>
+    <div id="mainTermSources" style="display:none">
+      <span style="color:#3d4a44;font-size:11px">Sources: chestPain_protocol.pdf (RRF: 0.031) · ACS_guidelines.pdf (RRF: 0.028)</span>
+    </div>
+  </div>
 </div>
 </div>
 </section>
@@ -653,5 +662,30 @@ document.querySelectorAll('a[href^="#"]').forEach(a => {
         if (target) { e.preventDefault(); target.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
     });
 });
+
+// ── Terminal typewriter ────────────────────────────────────────────────────
+(function () {
+    const msg    = "I've been having chest pain that radiates to my left arm";
+    const typed  = document.getElementById('mainTermTyped');
+    const cursor = document.getElementById('mainTermCursor');
+    const resp   = document.getElementById('mainTermResponse');
+    const srcs   = document.getElementById('mainTermSources');
+    if (!typed) return;
+    let i = 0, started = false;
+    const termObs = new IntersectionObserver(entries => {
+        if (!entries[0].isIntersecting || started) return;
+        started = true;
+        const iv = setInterval(() => {
+            typed.textContent += msg[i++];
+            if (i >= msg.length) {
+                clearInterval(iv);
+                cursor.style.display = 'none';
+                setTimeout(() => { resp.style.display = 'block'; }, 500);
+                setTimeout(() => { srcs.style.display = 'block'; }, 900);
+            }
+        }, 36);
+    }, { threshold: 0.6 });
+    termObs.observe(typed);
+})();
 </script>
 </body></html>
