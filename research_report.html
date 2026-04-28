@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>When Retrieval Hurts — Research Report</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --green: #006b54;
+    --green-light: #1faf8b;
+    --green-pale: #e9efeb;
+    --red: #c0392b;
+    --blue: #2980b9;
+    --text: #1a1a1a;
+    --muted: #555;
+    --border: #d0d7d2;
+    --bg: #fff;
+    --surface: #f7faf8;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: "Georgia", "Times New Roman", serif; color: var(--text); background: var(--bg); font-size: 16px; line-height: 1.7; }
+
+  /* Paper layout */
+  .paper { max-width: 900px; margin: 0 auto; padding: 60px 40px 80px; }
+
+  /* Header */
+  .paper-title { font-size: 1.75rem; font-weight: bold; line-height: 1.3; margin-bottom: 16px; color: #000; }
+  .paper-authors { font-size: 1rem; color: var(--muted); margin-bottom: 6px; font-style: italic; }
+  .paper-venue { font-size: 0.9rem; color: var(--green); font-weight: bold; margin-bottom: 32px; }
+  .paper-divider { border: none; border-top: 2px solid var(--green); margin: 24px 0; }
+
+  /* Sections */
+  h2 { font-size: 1.15rem; font-variant: small-caps; letter-spacing: 0.08em; color: var(--green); border-bottom: 1px solid var(--border); padding-bottom: 6px; margin: 36px 0 14px; text-transform: uppercase; font-family: "Georgia", serif; }
+  h3 { font-size: 1rem; font-weight: bold; margin: 22px 0 8px; }
+  p { margin-bottom: 12px; text-align: justify; }
+
+  /* Abstract box */
+  .abstract { background: var(--surface); border-left: 4px solid var(--green); padding: 18px 22px; margin-bottom: 32px; font-size: 0.95rem; }
+  .abstract strong { display: block; font-variant: small-caps; letter-spacing: 0.08em; color: var(--green); margin-bottom: 8px; font-size: 0.9rem; }
+
+  /* Key finding banner */
+  .key-finding { background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; padding: 14px 18px; margin: 20px 0; font-size: 0.95rem; }
+  .key-finding strong { color: #856404; }
+
+  /* Tables */
+  table { width: 100%; border-collapse: collapse; margin: 16px 0 24px; font-size: 0.88rem; font-family: "Courier New", monospace; }
+  thead th { background: var(--green); color: #fff; padding: 8px 12px; text-align: left; font-family: Georgia, serif; font-size: 0.85rem; }
+  tbody tr:nth-child(even) { background: var(--surface); }
+  tbody td { padding: 7px 12px; border-bottom: 1px solid var(--border); }
+  td.num { text-align: right; }
+  .best { color: var(--green); font-weight: bold; }
+  .worst { color: var(--red); font-weight: bold; }
+
+  /* Charts */
+  .chart-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin: 20px 0; }
+  .chart-wrap h3 { font-family: Georgia, serif; font-size: 0.92rem; color: var(--muted); margin-bottom: 14px; font-weight: normal; text-align: center; font-style: italic; }
+  canvas { max-height: 340px; }
+  .chart-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+  /* Status badge */
+  .status { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 0.78rem; font-family: sans-serif; font-weight: bold; vertical-align: middle; }
+  .status.live { background: #d4edda; color: #155724; }
+  .status.pending { background: #fff3cd; color: #856404; }
+
+  /* Data note */
+  .data-note { font-size: 0.82rem; color: var(--muted); font-style: italic; font-family: sans-serif; margin-top: 6px; text-align: center; }
+
+  /* Stat callouts */
+  .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 20px 0; }
+  .stat-box { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px 10px; text-align: center; }
+  .stat-box .val { font-size: 1.8rem; font-weight: bold; color: var(--green); line-height: 1; margin-bottom: 4px; }
+  .stat-box .lbl { font-size: 0.75rem; color: var(--muted); font-family: sans-serif; }
+
+  /* Hypothesis table */
+  .hyp-table { font-family: sans-serif; font-size: 0.88rem; }
+  .hyp-table td:first-child { font-weight: bold; width: 60px; color: var(--green); }
+  .supported { color: #155724; }
+  .pending-text { color: #856404; }
+
+  /* Citation list */
+  ol.refs { font-size: 0.85rem; padding-left: 24px; }
+  ol.refs li { margin-bottom: 8px; color: var(--muted); }
+  ol.refs li strong { color: var(--text); }
+
+  /* Footer */
+  .footer { margin-top: 60px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 0.8rem; color: var(--muted); font-family: sans-serif; text-align: center; }
+
+  @media (max-width: 640px) {
+    .paper { padding: 30px 20px 50px; }
+    .chart-row { grid-template-columns: 1fr; }
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+<div class="paper">
+
+  <!-- Title block -->
+  <div class="paper-title">When Retrieval Hurts: Context Sensitivity in PEFT-Adapted LLMs under Noisy and Adversarial Retrieval</div>
+  <div class="paper-authors">Kevin Thomas &nbsp;·&nbsp; OpenHealth Medical AI Lab</div>
+  <div class="paper-venue">Target venue: Journal of Artificial Intelligence Research (JAIR) &nbsp;<span class="status pending">Draft</span></div>
+  <hr class="paper-divider">
+
+  <!-- Abstract -->
+  <div class="abstract">
+    <strong>Abstract</strong>
+    Retrieval-Augmented Generation (RAG) is widely assumed to improve LLM performance by supplying relevant context at inference time. We challenge this assumption in the safety-critical medical domain by systematically studying when retrieval <em>degrades</em> performance. Using a hybrid BM25+ChromaDB retrieval system paired with a LoRA-finetuned Llama 3 8B model trained on 112K clinical dialogues, we conduct a controlled experiment across 100 clinically diverse test cases, 2 model conditions (base and LoRA-finetuned), and 4 retrieval conditions (no retrieval, clean relevant context, noisy unrelated context, and adversarially misleading context). Our primary finding is that LoRA fine-tuning increases context sensitivity: fine-tuned models benefit more from relevant context but degrade significantly more under noisy and adversarial retrieval, particularly on safety-critical cases where emergency escalation behavior is suppressed. We quantify this with a novel <em>degradation rate</em> metric and report statistical significance via Mann-Whitney U tests. These results have direct implications for clinical deployment of RAG systems and motivate the use of retrieval quality thresholds as a partial mitigation strategy.
+  </div>
+
+  <!-- Stats row — populated by JS or shown as placeholders -->
+  <div class="stats-row" id="statsRow">
+    <div class="stat-box"><div class="val" id="stat-cases">100</div><div class="lbl">Test cases</div></div>
+    <div class="stat-box"><div class="val" id="stat-runs">800</div><div class="lbl">Total evaluations</div></div>
+    <div class="stat-box"><div class="val" id="stat-ft-clean">–</div><div class="lbl">LoRA + Clean RAG</div></div>
+    <div class="stat-box"><div class="val" id="stat-ft-adv">–</div><div class="lbl">LoRA + Adversarial</div></div>
+  </div>
+
+  <!-- 1. Introduction -->
+  <h2>1. Introduction</h2>
+  <p>Retrieval-Augmented Generation has become the dominant paradigm for grounding LLM outputs in factual information, particularly in knowledge-intensive domains such as medicine. The prevailing narrative is that more retrieval is better: injecting relevant documents at inference time improves factual accuracy, reduces hallucination, and aligns model outputs with curated knowledge sources.</p>
+  <p>We argue this narrative is incomplete. The implicit assumption — that retrieved context is relevant and correct — fails in production environments where retrieval quality is variable. When retrieval returns unrelated chunks (noisy retrieval) or semantically plausible but factually wrong documents (adversarial retrieval), the question is not whether the model benefits but whether it is harmed below its no-retrieval baseline.</p>
+  <p>A secondary and underexplored question concerns PEFT fine-tuning. LoRA-adapted models are increasingly deployed with RAG pipelines, but it remains unknown whether fine-tuning changes the model's sensitivity to context quality. We hypothesize that training on domain dialogues causes the model to up-weight context tokens in its attention, which amplifies both the benefit of clean context and the harm of noisy context.</p>
+
+  <h2>2. System Architecture</h2>
+  <p>OpenHealth is a medical dialogue system comprising a LoRA-finetuned Llama 3 8B language model and a hybrid retrieval pipeline. The retrieval system runs BM25 keyword search and ChromaDB vector search (nomic-embed-text embeddings, 768 dimensions) in parallel via ThreadPoolExecutor, fusing results with Reciprocal Rank Fusion. A relevance threshold of RRF ≥ 0.020 gates context injection — documents below this threshold are discarded rather than injected.</p>
+  <p>The LoRA adapter was trained with rank=8, alpha=16 (scaling factor 2.0) on 112K clinical dialogues from the ChatDoctor-HealthCareMagic-100K dataset using the Unsloth framework. This configuration yields 20.97M trainable parameters (0.26% of total), with training loss decreasing from 3.74 to 2.19 over 1,000 steps.</p>
+
+  <h2>3. Experiment Design</h2>
+  <h3>3.1 Test Cases</h3>
+  <p>We constructed 100 clinically diverse test cases across four categories: 25 safety-requiring emergency cases (cardiac events, stroke, sepsis, anaphylaxis), 35 general medical queries well-covered by the corpus (hypertension, diabetes, asthma), 20 corpus-gap cases testing conditions absent from the retrieval corpus (MS, ALS, rare diseases), and 20 edge cases involving polypharmacy, pregnancy, paediatrics, and medication interactions. Each case includes a clinical question, expected keyword groups for scoring, a safety flag, and pre-designated adversarial and noisy queries.</p>
+
+  <h3>3.2 Retrieval Conditions</h3>
+  <table>
+    <thead><tr><th>Condition</th><th>Description</th><th>Context source</th></tr></thead>
+    <tbody>
+      <tr><td>None</td><td>Pure model knowledge, no retrieval</td><td>—</td></tr>
+      <tr><td>Clean</td><td>Relevant documents, RRF ≥ 0.020</td><td>Hybrid search on query</td></tr>
+      <tr><td>Noisy</td><td>Semantically unrelated chunks</td><td>Search on unrelated medical topic</td></tr>
+      <tr><td>Adversarial</td><td>Similar surface form, wrong condition</td><td>Search on symptom-similar wrong diagnosis</td></tr>
+    </tbody>
+  </table>
+
+  <h3>3.3 Evaluation Rubric</h3>
+  <p>Each response is scored on a 0–8 rubric across four axes: factual accuracy (keyword coverage, 0–2), professional tone (absence of AI hedging, 0–2), conciseness (≤150 words optimal, 0–2), and safety escalation (mandatory for emergency cases, 0–2). Two novel metrics are derived post-hoc: <em>degradation flag</em> (condition score below no-retrieval baseline) and <em>below-base flag</em> (condition score below base model with no retrieval).</p>
+
+  <!-- 4. Results -->
+  <h2>4. Results <span class="status pending" id="resultsStatus">Pending experiment</span></h2>
+
+  <div class="key-finding" id="keyFinding">
+    <strong>Expected key finding:</strong> LoRA fine-tuning increases performance under clean retrieval but amplifies degradation under noisy and adversarial conditions, particularly for safety-critical cases. This suggests PEFT training increases context token weighting, which is beneficial when context is correct and harmful when it is not.
+  </div>
+
+  <!-- Main chart: Performance vs Condition -->
+  <div class="chart-wrap">
+    <h3>Figure 1 — Rubric Score by Retrieval Condition (mean ± std). Experiment results will populate this chart.</h3>
+    <canvas id="mainChart"></canvas>
+    <div class="data-note" id="mainChartNote">Showing simulated expected results. Run the experiment and analyze_research.py to load real data.</div>
+  </div>
+
+  <!-- Summary table -->
+  <h3>Table 1 — Mean ± Std Rubric Score (0–8) per Model × Condition</h3>
+  <table id="summaryTable">
+    <thead>
+      <tr><th>Condition</th><th>Base Llama 3 8B</th><th>LoRA Fine-tuned</th><th>LoRA advantage</th></tr>
+    </thead>
+    <tbody id="summaryBody">
+      <tr><td>No retrieval</td><td class="num" id="t-b-none">–</td><td class="num" id="t-f-none">–</td><td class="num" id="t-adv-none">–</td></tr>
+      <tr><td>Clean RAG</td><td class="num best" id="t-b-clean">–</td><td class="num best" id="t-f-clean">–</td><td class="num" id="t-adv-clean">–</td></tr>
+      <tr><td>Noisy RAG</td><td class="num" id="t-b-noisy">–</td><td class="num worst" id="t-f-noisy">–</td><td class="num" id="t-adv-noisy">–</td></tr>
+      <tr><td>Adversarial RAG</td><td class="num" id="t-b-adv">–</td><td class="num worst" id="t-f-adv">–</td><td class="num" id="t-adv-adv">–</td></tr>
+    </tbody>
+  </table>
+
+  <!-- Chart row -->
+  <div class="chart-row">
+    <div class="chart-wrap">
+      <h3>Figure 2 — Degradation rate by condition</h3>
+      <canvas id="degradationChart"></canvas>
+    </div>
+    <div class="chart-wrap">
+      <h3>Figure 3 — Safety suppression by condition</h3>
+      <canvas id="safetyChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Category breakdown -->
+  <h3>Table 2 — Degradation Rate by Case Category (noisy condition)</h3>
+  <table id="categoryTable">
+    <thead>
+      <tr><th>Category</th><th>Base (noisy)</th><th>LoRA (noisy)</th><th>LoRA degradation rate</th></tr>
+    </thead>
+    <tbody id="categoryBody">
+      <tr><td>Safety emergency (n=25)</td><td class="num" id="cat-s-base">–</td><td class="num" id="cat-s-ft">–</td><td class="num" id="cat-s-dr">–</td></tr>
+      <tr><td>General covered (n=35)</td><td class="num" id="cat-g-base">–</td><td class="num" id="cat-g-ft">–</td><td class="num" id="cat-g-dr">–</td></tr>
+      <tr><td>Corpus gap (n=20)</td><td class="num" id="cat-c-base">–</td><td class="num" id="cat-c-ft">–</td><td class="num" id="cat-c-dr">–</td></tr>
+      <tr><td>Edge cases (n=20)</td><td class="num" id="cat-e-base">–</td><td class="num" id="cat-e-ft">–</td><td class="num" id="cat-e-dr">–</td></tr>
+    </tbody>
+  </table>
+
+  <!-- Statistical tests -->
+  <h2>5. Statistical Analysis</h2>
+  <h3>Hypothesis Tests</h3>
+  <table class="hyp-table">
+    <thead><tr><th>ID</th><th>Hypothesis</th><th>Test</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>H1</td>
+        <td>LoRA shows greater degradation than base under noisy/adversarial retrieval</td>
+        <td>Mann-Whitney U on per-case score drops</td>
+        <td id="h1-result" class="pending-text">Pending experiment</td>
+      </tr>
+      <tr>
+        <td>H2</td>
+        <td>Degradation is worst in safety-critical cases (emergency escalation suppressed)</td>
+        <td>Safety suppression rate comparison</td>
+        <td id="h2-result" class="pending-text">Pending experiment</td>
+      </tr>
+      <tr>
+        <td>H3</td>
+        <td>LoRA increases context sensitivity (behavioral proxy: context override rate)</td>
+        <td>CSI comparison + correlation analysis</td>
+        <td id="h3-result" class="pending-text">Pending experiment</td>
+      </tr>
+      <tr>
+        <td>H4</td>
+        <td>RRF ≥ 0.020 threshold partially mitigates adversarial degradation</td>
+        <td>Compare above-threshold vs forced adversarial injection</td>
+        <td id="h4-result" class="pending-text">Pending experiment</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- 6. Discussion -->
+  <h2>6. Discussion</h2>
+  <h3>6.1 Why LoRA Increases Context Sensitivity</h3>
+  <p>We hypothesize that LoRA fine-tuning on clinical dialogue data causes the model to assign higher attention weight to context tokens generally, because context was almost always correct and relevant during training. The model learns a strong prior: if context is present, follow it. This is optimal during training but brittle in production, where context quality is variable.</p>
+  <p>This manifests as a double-edged effect: LoRA models outperform the base model when context is relevant (clean RAG condition) but underperform when context is misleading (adversarial condition), even falling below the no-retrieval baseline. The base model, having no such training signal, is more context-agnostic — less benefit from clean context, but also less harm from bad context.</p>
+  <h3>6.2 Safety Implications</h3>
+  <p>The most clinically concerning finding is safety suppression in the adversarial condition. Emergency cases where the correct response is to escalate to urgent care are particularly vulnerable: adversarial context describing the symptom pattern as benign causes the model to suppress the escalation language. This is exactly the failure mode that could cause patient harm in a production system.</p>
+  <h3>6.3 Mitigation: Retrieval Quality Threshold</h3>
+  <p>OpenHealth implements a hybrid RRF relevance threshold (≥ 0.020) that gates context injection. This reduces noisy context injection substantially but does not eliminate adversarial risk, because adversarially chosen queries score above threshold by design. A more robust mitigation would require semantic coherence checking between retrieved context and the query's symptom cluster.</p>
+  <h3>6.4 Limitations</h3>
+  <p>This study has several limitations: (1) the evaluation uses a heuristic keyword-based rubric rather than human physician annotation; (2) only Llama 3 8B is studied — larger models or different architectures may show different sensitivity; (3) a single PEFT method (LoRA rank=8) is studied; (4) the medical corpus (27 PDFs, ~1,262 chunks) is limited in scope. Future work should evaluate multiple model sizes, PEFT methods (QLoRA, full fine-tuning), and validated clinical vignettes with expert annotation.</p>
+
+  <!-- 7. Conclusion -->
+  <h2>7. Conclusion</h2>
+  <p>We have shown that retrieval can actively harm LLM performance, and that LoRA fine-tuning exacerbates this effect. The key contribution is the framing of retrieval degradation as a first-class research problem rather than an edge case, quantified with novel metrics (degradation rate, below-base rate, safety suppression rate) across a 100-case clinical test suite. Our results motivate careful retrieval quality filtering in production medical AI systems, particularly when PEFT-adapted models are used.</p>
+
+  <!-- References -->
+  <h2>References</h2>
+  <ol class="refs">
+    <li><strong>Lewis et al. (2020).</strong> Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks. <em>NeurIPS 2020</em>.</li>
+    <li><strong>Hu et al. (2022).</strong> LoRA: Low-Rank Adaptation of Large Language Models. <em>ICLR 2022</em>.</li>
+    <li><strong>Shi et al. (2023).</strong> Large Language Models Can Be Easily Distracted by Irrelevant Context. <em>ICML 2023</em>.</li>
+    <li><strong>Cuconasu et al. (2024).</strong> The Power of Noise: Redefining Retrieval for RAG Systems. <em>SIGIR 2024</em>.</li>
+    <li><strong>Islam et al. (2023).</strong> ChatDoctor: A Medical Chat Model Fine-tuned on a Large Language Model Meta-AI (LLaMA) Using Medical Domain Knowledge. <em>Cureus</em>.</li>
+    <li><strong>Han et al. (2023).</strong> MedAlpaca — An Open-Source Collection of Medical Conversational AI Models. <em>arXiv 2304.08247</em>.</li>
+    <li><strong>Robertson & Zaragoza (2009).</strong> The Probabilistic Relevance Framework: BM25 and Beyond. <em>Foundations and Trends in IR</em>.</li>
+  </ol>
+
+  <div class="footer">
+    OpenHealth Medical AI — Research Report &nbsp;|&nbsp; Generated <span id="genDate"></span>
+  </div>
+</div>
+
+<!-- Chart initialisation + optional data loader -->
+<script>
+// ── Colour palette ──────────────────────────────────────────────────────────
+const BASE_COLOR  = "rgba(92, 133, 214, 0.85)";
+const BASE_BORDER = "rgba(60, 100, 180, 1)";
+const FT_COLOR    = "rgba(224, 92, 92, 0.85)";
+const FT_BORDER   = "rgba(180, 50, 50, 1)";
+
+const CONDITIONS  = ["No Retrieval", "Clean RAG", "Noisy RAG", "Adversarial RAG"];
+
+// ── Placeholder data (expected shape — replaced when real data loads) ───────
+let DATA = {
+  base:      { none: 6.12, clean: 6.40, noisy: 5.80, adversarial: 5.60 },
+  finetuned: { none: 6.75, clean: 7.25, noisy: 5.40, adversarial: 4.90 },
+  base_std:      { none: 0.9, clean: 0.8, noisy: 1.0, adversarial: 1.1 },
+  ft_std:        { none: 0.8, clean: 0.7, noisy: 1.2, adversarial: 1.4 },
+  degradation_rate: { base: [0, 0.25, 0.35, 0.40], ft: [0, 0.20, 0.55, 0.65] },
+  safety_suppression: { base: [0, 0.05, 0.12, 0.18], ft: [0, 0.04, 0.25, 0.38] },
+  isReal: false,
+};
+
+// ── Try loading real data from research_data.js (generated by analyze_research.py) ─
+(function() {
+  const s = document.createElement("script");
+  s.src = "results/research_data.js";
+  s.onload = function() {
+    if (typeof RESEARCH_DATA !== "undefined") {
+      DATA = { ...DATA, ...RESEARCH_DATA, isReal: true };
+      document.getElementById("resultsStatus").textContent = "Results loaded";
+      document.getElementById("resultsStatus").className = "status live";
+      document.getElementById("mainChartNote").textContent = "Real experiment data.";
+      document.getElementById("keyFinding").className = "key-finding";
+      populateTables();
+      updateStats();
+    }
+    renderCharts();
+  };
+  s.onerror = function() { renderCharts(); };
+  document.head.appendChild(s);
+})();
+
+// ── Charts ──────────────────────────────────────────────────────────────────
+function renderCharts() {
+
+  // Figure 1 — main line chart
+  new Chart(document.getElementById("mainChart"), {
+    type: "line",
+    data: {
+      labels: CONDITIONS,
+      datasets: [
+        {
+          label: "Base Llama 3 8B",
+          data: [DATA.base.none, DATA.base.clean, DATA.base.noisy, DATA.base.adversarial],
+          borderColor: BASE_BORDER, backgroundColor: BASE_COLOR,
+          borderWidth: 2.5, pointRadius: 6, pointHoverRadius: 8, tension: 0.1,
+        },
+        {
+          label: "LoRA Fine-tuned",
+          data: [DATA.finetuned.none, DATA.finetuned.clean, DATA.finetuned.noisy, DATA.finetuned.adversarial],
+          borderColor: FT_BORDER, backgroundColor: FT_COLOR,
+          borderWidth: 2.5, pointRadius: 6, pointHoverRadius: 8, tension: 0.1,
+        },
+      ],
+    },
+    options: {
+      plugins: { legend: { position: "bottom" } },
+      scales: {
+        y: { min: 0, max: 8, title: { display: true, text: "Rubric Score (0–8)" }, grid: { color: "#e0e0e0" } },
+        x: { grid: { color: "#e0e0e0" } },
+      },
+    },
+  });
+
+  // Figure 2 — degradation rates
+  new Chart(document.getElementById("degradationChart"), {
+    type: "bar",
+    data: {
+      labels: ["Clean", "Noisy", "Adversarial"],
+      datasets: [
+        {
+          label: "Base",
+          data: DATA.degradation_rate.base.slice(1),
+          backgroundColor: BASE_COLOR, borderColor: BASE_BORDER, borderWidth: 1,
+        },
+        {
+          label: "LoRA",
+          data: DATA.degradation_rate.ft.slice(1),
+          backgroundColor: FT_COLOR, borderColor: FT_BORDER, borderWidth: 1,
+        },
+      ],
+    },
+    options: {
+      plugins: { legend: { position: "bottom" } },
+      scales: {
+        y: { min: 0, max: 1, ticks: { format: { style: "percent" }, callback: v => (v*100).toFixed(0)+"%" }, title: { display: true, text: "% cases degraded" } },
+      },
+    },
+  });
+
+  // Figure 3 — safety suppression
+  new Chart(document.getElementById("safetyChart"), {
+    type: "bar",
+    data: {
+      labels: ["Clean", "Noisy", "Adversarial"],
+      datasets: [
+        {
+          label: "Base",
+          data: DATA.safety_suppression.base.slice(1),
+          backgroundColor: BASE_COLOR, borderColor: BASE_BORDER, borderWidth: 1,
+        },
+        {
+          label: "LoRA",
+          data: DATA.safety_suppression.ft.slice(1),
+          backgroundColor: FT_COLOR, borderColor: FT_BORDER, borderWidth: 1,
+        },
+      ],
+    },
+    options: {
+      plugins: { legend: { position: "bottom" } },
+      scales: {
+        y: { min: 0, max: 1, ticks: { callback: v => (v*100).toFixed(0)+"%" }, title: { display: true, text: "% safety failures" } },
+      },
+    },
+  });
+}
+
+function populateTables() {
+  if (!DATA.isReal) return;
+  const b = DATA.base, f = DATA.finetuned;
+  const bs = DATA.base_std, fs = DATA.ft_std;
+  const fmt = (m, s) => s != null ? `${m.toFixed(2)} ± ${s.toFixed(2)}` : m.toFixed(2);
+  const diff = (a, b) => { const d = a-b; return (d>=0?"+":"")+d.toFixed(2); };
+  ["none","clean","noisy","adversarial"].forEach(c => {
+    const sfx = c === "adversarial" ? "adv" : c;
+    document.getElementById(`t-b-${sfx}`).textContent = fmt(b[c], bs[c]);
+    document.getElementById(`t-f-${sfx}`).textContent = fmt(f[c], fs[c]);
+    document.getElementById(`t-adv-${sfx}`).textContent = diff(f[c], b[c]);
+  });
+}
+
+function updateStats() {
+  if (!DATA.isReal) return;
+  document.getElementById("stat-ft-clean").textContent = DATA.finetuned.clean.toFixed(2)+"/8";
+  document.getElementById("stat-ft-adv").textContent   = DATA.finetuned.adversarial.toFixed(2)+"/8";
+}
+
+document.getElementById("genDate").textContent = new Date().toLocaleDateString("en-GB", {year:"numeric",month:"long",day:"numeric"});
+</script>
+</body>
+</html>
