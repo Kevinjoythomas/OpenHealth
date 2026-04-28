@@ -73,3 +73,13 @@ data/
 .vscode/
 .idea/
 !vercel.json
+
+# GGUF model weights
+*.gguf
+
+# Experiment results and screenshots
+results/
+Screenshot*.png
+
+# Service SQLite instances
+services/*/app/instance/
