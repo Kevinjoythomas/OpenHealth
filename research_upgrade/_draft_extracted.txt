@@ -1,0 +1,362 @@
+﻿OpenHealth: A Framework for Efficient Medical QA via Hybrid Retrieval and Parameter-Efficient Fine-Tuning
+Kevin Joy Thomas¹,  Aayush Potdar²,  Shobith Nathan³,  Mogiligidda Sravani⁴
+Department of Information Technology
+Maturi Venkata Subba Rao (MVSR) Engineering College, Hyderabad, India
+¹kevinjoythomas2004@gmail.com  ²shobithnathan@gmail.com  ³aayushpotdar@gmail.com   ⁴
+Abstract
+Abstract—Large language models have demonstrated strong potential for clinical question answering, yet their deployment in resource-constrained settings remains limited by prohibitive computational cost, data-privacy concerns associated with cloud APIs, and the tendency of general-purpose models to hallucinate clinically unsafe content. We present OpenHealth, a locally deployable medical question-answering system built on a 4-bit quantised LLaMA 3 8B backbone adapted through Low-Rank Adaptation (LoRA) with rank r = 8 and scaling factor α = 16, updating only 20.97 M parameters (0.26 % of the full model). The system is augmented with a hybrid retrieval pipeline that combines Okapi BM25 lexical search and dense nomic-embed-text vector search over a ChromaDB corpus, fused through Reciprocal Rank Fusion (RRF) with a relevance threshold of 0.020 to suppress low-confidence retrievals. The complete pipeline runs on consumer hardware (NVIDIA RTX 3050 Laptop GPU, 8 GB VRAM). On 100 held-out ChatDoctor samples, the fine-tuned model improves ROUGE-1 by 26.7 % over the base model (0.327 vs. 0.258) and ROUGE-2 by 94.3 %, while generating responses 2.5× faster. On an 8-case clinical rubric, the full system (fine-tune + RAG) achieves 7.2 / 8, compared with 6.1 / 8 for the base model, and restores correct safety-referral behaviour on four adversarial chest-pain and polypharmacy cases that the base model handled incorrectly. These results indicate that parameter-efficient adaptation, coupled with confidence-gated hybrid retrieval, is sufficient to produce a clinically useful medical assistant on hardware accessible to individual clinicians and institutions in low-resource regions.
+Index Terms—Large Language Models, LoRA, Parameter-Efficient Fine-Tuning, 4-bit Quantisation, Retrieval-Augmented Generation, BM25, Dense Vector Search, Reciprocal Rank Fusion, Clinical Question Answering, Medical AI, LLaMA 3, Edge Deployment.
+I.  INTRODUCTION
+The last three years have seen large language models (LLMs) transition from research curiosities into general-purpose reasoning engines, with models such as GPT-4, Claude, and the open-weight LLaMA family demonstrating competence across medical licensing examinations, differential diagnosis, and patient communication. However, three persistent barriers prevent their direct clinical deployment in everyday settings. First, state-of-the-art proprietary models are accessible only through commercial APIs, creating recurring costs and routing patient-identifiable information through third-party infrastructure in violation of most data-protection frameworks. Second, open-weight models at the 70 B–405 B scale that approach frontier performance require data-centre GPUs (A100/H100) that remain inaccessible to individual practitioners and community clinics. Third, even when deployed locally, general-purpose LLMs are prone to two failure modes that are particularly dangerous in medicine: confident fabrication of drug interactions or dosages that do not exist in the evidence base, and systematic under-triage of emergency presentations — for example, describing classical acute coronary syndrome symptoms as possible acid reflux rather than urgently referring the patient.
+This paper presents OpenHealth, a medical question-answering system designed to address all three barriers simultaneously. The system is built around an 8-billion-parameter LLaMA 3 model in 4-bit quantised form, fine-tuned with Low-Rank Adaptation (LoRA) [1] on 112,165 doctor–patient consultations and augmented at inference time with a hybrid retrieval pipeline grounded in six authoritative medical reference documents. The entire pipeline — authentication, chat orchestration, retrieval service, vector store, and LLM inference — runs on a single consumer laptop equipped with an NVIDIA RTX 3050 GPU and 8 GB of VRAM, with total VRAM headroom after model loading of less than 4 GB.
+We make four specific contributions. (i) We demonstrate that LoRA with rank r = 8 and α = 16 — which touches only 0.26 % of the base model's parameters — is sufficient to shift the model's stylistic register and medical reasoning behaviour without degrading its general linguistic competence, yielding a 26.7 % relative improvement in ROUGE-1 and a 94.3 % relative improvement in ROUGE-2 on held-out medical dialogue. (ii) We provide a quantitative comparison of three retrieval strategies (BM25, dense vector with Maximal Marginal Relevance, and hybrid Reciprocal Rank Fusion) on both latency and qualitative relevance, showing that hybrid RRF incurs no additional latency over dense retrieval alone while surfacing cross-domain clinical associations that neither individual retriever returns. (iii) We introduce a relevance-gated retrieval mechanism that suppresses document injection when the fused RRF score falls below an empirically determined threshold of 0.020, eliminating a failure mode in which irrelevant retrieved context actively degrades output below the no-retrieval baseline. (iv) We show on an adversarial 8-case clinical rubric that the combined fine-tune-plus-RAG pipeline restores correct safety-referral behaviour on cases where both the base model and the fine-tuned-only model fail.
+The remainder of this paper is organised as follows. Section II surveys related work in parameter-efficient fine-tuning, retrieval-augmented generation, and medical LLM evaluation. Section III describes the proposed system in detail, including architecture, training configuration, and retrieval methodology. Section IV reports experimental results across three evaluation frameworks. Section V concludes with limitations and directions for future work.
+II.  RELATED WORK
+A.  Parameter-Efficient Fine-Tuning of Large Language Models
+Full fine-tuning of a billion-parameter language model requires storing optimiser state (typically two moment estimates per parameter under AdamW) that is two to three times the size of the model itself, placing it beyond the reach of consumer hardware. A family of parameter-efficient fine-tuning (PEFT) methods has emerged to address this. LoRA [1] decomposes the weight update ΔW ∈ ℝᵐˣⁿ into a low-rank product BA where B ∈ ℝᵐˣʳ and A ∈ ℝʳˣⁿ with r ≪ min(m, n); only A and B are trained, while the base weights W₀ remain frozen. The effective weight at inference time is W = W₀ + (α/r)BA, where α is a fixed scaling hyperparameter. Subsequent work has explored orthogonal reparameterisations that preserve spectral properties of the weight matrix [2], as well as methods that generalise from energy-preserving to spectrum-preserving training through double-sided orthogonal equivalence transformations [2]. OpenHealth adopts classical LoRA in its 4-bit QLoRA variant [3] as the fine-tuning vehicle, primarily because of its mature tooling support (Unsloth) and its suitability for single-GPU training within 8 GB of VRAM.
+B.  Retrieval-Augmented Generation
+Retrieval-Augmented Generation (RAG) [4] addresses the closed-book limitations of language models by retrieving relevant passages from an external corpus at inference time and conditioning the generator on them. Early RAG systems used dense bi-encoder retrieval (DPR [5]) exclusively; later work observed that dense retrievers struggle on exact-match queries such as drug names, ICD codes, and specific measurement values, where classical sparse methods such as Okapi BM25 [6] remain competitive. Hybrid retrieval strategies that combine sparse and dense signals have become the de facto standard. Among score-fusion techniques, Reciprocal Rank Fusion [7] is particularly attractive because it requires no score normalisation across retrievers: each document is scored as Σᵢ 1/(k + rankᵢ(d)) with a smoothing constant k conventionally set to 60.
+C.  Medical Large Language Models
+A growing body of work has applied LLMs to clinical tasks. Med-PaLM and Med-PaLM 2 demonstrated that a suitably adapted 540 B-parameter model can reach expert-level performance on USMLE-style questions, but the computational footprint makes it impractical for routine deployment. ClinicalBERT, BioBERT, and PubMedBERT represent earlier encoder-only adaptations trained on biomedical corpora. ChatDoctor [8] is a smaller medical dialogue dataset containing 100 K patient–doctor consultations that has been used as a fine-tuning substrate for several open-weight medical assistants. OpenHealth uses a curated subset of 112,165 ChatDoctor samples as its training corpus. To the best of our knowledge, no prior work has specifically characterised the combined behaviour of 4-bit quantisation, LoRA adaptation, and confidence-gated hybrid RAG on 8-GB consumer hardware in the medical domain.
+III.  PROPOSED APPROACH
+A.  System Architecture
+OpenHealth is implemented as a five-service microservice architecture. The decomposition isolates concerns so that a failure or slowdown in one component does not cascade to the others, and so that any individual service (for example, the inference backend) can be upgraded or scaled independently.
+The five services are: (i) a Flask-based frontend that serves the authentication and chat HTML to the browser; (ii) an API Gateway that acts as the single entry point, validates JSON Web Tokens (JWTs), injects the authenticated user identifier as an HTTP header, and proxies requests to downstream services; (iii) an Authentication Service that handles signup, login, and refresh-token rotation using bcrypt for password hashing and Redis for revocation of compromised refresh tokens; (iv) a Chat Orchestrator that saves user messages, retrieves conversation history from Redis (falling back to PostgreSQL on cache miss), invokes the Retrieval Service, constructs the final prompt, and calls the local LLM runtime; and (v) a Retrieval Service that exposes BM25, dense-vector, and hybrid endpoints over a ChromaDB collection containing the chunked and embedded medical corpus.
+
+[ Figure 1:  OpenHealth five-service microservice architecture showing data flow from browser through API Gateway, Auth Service, Chat Orchestrator, Retrieval Service, Ollama runtime, PostgreSQL, Redis, ChromaDB. ]
+
+Fig. 1.  High-level architecture of the OpenHealth system.
+B.  Methodology
+1)  Base model and 4-bit quantisation
+The foundation model is unsloth/llama-3-8b-Instruct-bnb-4bit, an 8-billion-parameter LLaMA 3 Instruct checkpoint quantised to 4-bit NF4 format using the bitsandbytes library. Quantisation reduces the nominal 16 GB fp16 footprint to approximately 5.4 GB of VRAM, leaving approximately 2.6 GB of the 8 GB device memory for activations, KV cache, and LoRA adapters during training. The quantisation error for NF4 on normally distributed weights is empirically small and does not materially degrade downstream task performance [3].
+2)  LoRA configuration
+LoRA adapters are injected into all seven projection matrices of each transformer block: the query, key, value, and output projections of the self-attention mechanism (q_proj, k_proj, v_proj, o_proj) and the gate, up, and down projections of the feed-forward network (gate_proj, up_proj, down_proj). With rank r = 8 applied across all 32 transformer blocks, the total number of trainable parameters is 20,971,520, or 0.26 % of the 8 B base. The effective weight update at inference time follows the standard LoRA formulation:
+	W = W₀ + (α / r) · B · A,  with  A ∈ ℝ^(r×n),  B ∈ ℝ^(m×r),  r = 8,  α = 16(1)
+The scaling factor α/r = 16/8 = 2 amplifies the adapter's contribution relative to the frozen weights, which we found empirically important for shifting the model's output distribution toward the medical-consultation register without destabilising its general linguistic competence. We selected r = 8 as a conservative default that provides sufficient expressive capacity for stylistic and domain adaptation while keeping optimiser state, activation memory, and training time within the 8-GB budget of the target hardware. Higher ranks (r = 16, 32, 64) are common in the literature but increase memory pressure and the risk of overfitting on a domain-specific corpus of this size.
+3)  Training corpus and procedure
+We fine-tune on 112,165 question–answer pairs drawn from the ChatDoctor corpus [8], each consisting of a patient-authored question and a clinician-authored response. The prompt template is a standard instruction format that prepends a system message establishing the model's role as a medical consultant. Training uses Unsloth's FastLanguageModel integration with the Hugging Face SFTTrainer, AdamW 8-bit optimiser, linear learning-rate decay from 2 × 10⁻⁴, effective batch size 8 (micro-batch 2 with gradient accumulation 4), sequence length 2,048 tokens, and fp16 mixed-precision compute. Training runs for 1,000 gradient steps — approximately 8,000 of the 112,165 samples, or 7.1 % of a full epoch — because preliminary experiments confirmed that this budget is already sufficient to yield substantial downstream gains while remaining within the 2-hour-and-22-minute wall-clock ceiling imposed by the target hardware.
+4)  Retrieval pipeline
+The retrieval corpus comprises six authoritative medical reference PDFs spanning cardiovascular, respiratory, infectious, ENT, and musculoskeletal domains (see Table III in Section IV). Each PDF is split into chunks of approximately 800 tokens with an 80-token overlap to preserve context across chunk boundaries. Each chunk is embedded into a 768-dimensional vector using the nomic-embed-text model served by Ollama, and stored in a ChromaDB collection backed by SQLite. The same chunks are additionally indexed in memory for Okapi BM25 [6] search.
+At query time, the Retrieval Service executes BM25 and dense vector search concurrently through a two-worker ThreadPoolExecutor. The dense retriever uses Maximal Marginal Relevance (MMR) re-ranking to promote diversity among the top candidates. The two ranked lists are fused using Reciprocal Rank Fusion [7]:
+	score_RRF(d) = 1 / (k + rank_vec(d)) + 1 / (k + rank_bm25(d)),  k = 60(2)
+The constant k = 60 follows the value recommended in the original RRF paper and empirically dampens the advantage of being ranked first over being ranked fifth, making the fusion robust to minor perturbations in either retriever. A relevance threshold τ is applied post-fusion: if the top document's RRF score is below τ, no documents are injected into the LLM prompt and no source citations are returned. We set τ = 0.020 based on empirical calibration; this threshold requires approximately that both retrievers ranked the document in their respective top-10 lists, which is our operational definition of retrieval confidence.
+	Inject context  ⇔  max_d  score_RRF(d)  ≥  τ,  with  τ = 0.020(3)
+5)  Prompt construction
+When the threshold is cleared, the Chat Orchestrator constructs the final prompt as the concatenation of four blocks: a system message establishing the medical-consultation role and safety constraints; a context block containing the retrieved chunks with their document name and page number; the last 20 turns of conversation history drawn from Redis (with a PostgreSQL fallback); and the new user question. When the threshold is not cleared, the context block is omitted and the model answers from the knowledge acquired during fine-tuning. Source citations are appended to the final response only when retrieved documents were actually injected.
+IV.  RESULTS
+A.  Experimental Setup
+1)  Hardware configuration
+All training and inference experiments were conducted on a single consumer laptop with the following specifications: NVIDIA GeForce RTX 3050 Laptop GPU with 8 GB of GDDR6 VRAM (CUDA compute capability 8.6); 16 GB of system DDR4 RAM; Intel Core i5 mobile-class CPU; Windows 11 operating system. No multi-GPU or distributed training was used.
+2)  Software configuration
+Component
+Version / Configuration
+
+Base model
+unsloth/llama-3-8b-Instruct-bnb-4bit (NF4, fp16 compute)
+
+Fine-tuning
+Unsloth 2025.1.5 + Hugging Face TRL (SFTTrainer)
+
+Optimiser
+AdamW 8-bit (bitsandbytes), linear LR decay
+
+Inference runtime
+Ollama, openhealth-doctor (Llama 3 8B Q4_K_M)
+
+Embedding model
+nomic-embed-text (768-dim) via Ollama
+
+Vector store
+ChromaDB 0.4.x, SQLite, HNSW index
+
+BM25
+rank_bm25 0.2.2 (Okapi)
+
+Orchestration
+Python 3.11, Flask 3.x microservices
+
+Data stores
+PostgreSQL (SQLite local), Redis (fakeredis local)
+
+Evaluation
+rouge-score 0.1.2, Porter stemming
+
+TABLE I.  SOFTWARE CONFIGURATION USED FOR TRAINING AND EVALUATION.
+3)  Training hyperparameters
+Parameter
+Value
+
+LoRA rank (r)
+8
+
+LoRA scaling factor (α)
+16
+
+Effective scaling α / r
+2.0
+
+Target modules
+q, k, v, o, gate, up, down
+
+Trainable parameters
+20,971,520 (0.26 %)
+
+Samples seen
+~8,000 / 112,165 (7.1 %)
+
+Effective batch size
+8 (2 × 4 grad-accum)
+
+Learning rate
+2 × 10⁻⁴ linear decay
+
+Max steps
+1,000
+
+Sequence length
+2,048 tokens
+
+Wall-clock time
+2 h 22 min
+
+TABLE II.  LoRA FINE-TUNING HYPERPARAMETERS.
+4)  Retrieval corpus
+Document
+Domain
+Source
+
+heartDisease.pdf
+Cardiovascular
+Clinical review
+
+chestPain(full).pdf
+Cardiovascular
+ACC/AHA Guideline (2021)
+
+breathingPatterns.pdf
+Respiratory
+Research article
+
+tuberculosis.pdf
+Infectious
+Clinical trial review
+
+tonsillitis.pdf
+ENT / Paediatric
+Clinical overview
+
+ArmAndNeckPain.pdf
+Musculoskeletal
+Clinical overview
+
+TABLE III.  SIX MEDICAL REFERENCE DOCUMENTS COMPRISING THE RETRIEVAL CORPUS.
+B.  Test Results
+1)  Training loss dynamics
+Cross-entropy training loss was recorded at every gradient step over the 1,000-step run. The average loss declines monotonically across four phases: initial (steps 1–10, mean 3.17); early learning (steps 10–100, mean 2.40); mid training (steps 100–500, mean 2.24); and late training (steps 500–1,000, mean 2.12). The overall reduction from step 1 to step 1,000 is 41.4 %, from 3.74 to 2.19. A brief gradient spike was observed at steps 413–415 (loss rising transiently from ≈ 2.1 to 3.04), most plausibly caused by a single unusually long training example; the model recovered within three steps, which is characteristic of LoRA fine-tuning with small effective batch sizes and does not indicate training instability.
+A final loss of 2.19 corresponds to an average next-token probability of e⁻²·¹⁹ ≈ 11 % for the ground-truth token — a value consistent with fine-tuning on diverse open-ended medical dialogue, where many paraphrases of a clinically correct response are simultaneously valid. Critically, the loss curve had not plateaued at termination, indicating that the model was deliberately under-trained relative to the corpus; a full epoch (approximately 14,000 steps) would be expected to further reduce loss and improve downstream metrics.
+
+[ Figure 2: Training-loss curve over 1,000 gradient steps, with four annotated phases (initial, early, mid, late) and highlighted gradient spike at steps 413–415. ]
+
+Fig. 2.  Cross-entropy training loss over 1,000 steps (wall-clock 2 h 22 min).
+2)  ROUGE evaluation — memorisation vs. generalisation
+We draw 100 samples from the ChatDoctor corpus: 50 from rows 0–7,999 (seen during training; memorisation condition) and 50 from rows 8,000–112,164 (never seen; generalisation condition). Each patient question is submitted at temperature 0.1 to both the base and fine-tuned models, and outputs are compared against the ground-truth doctor response using ROUGE-1, ROUGE-2, and ROUGE-L F-measures with Porter stemming.
+Condition
+Model
+R-1
+R-2
+R-L
+
+Mem. (n=50)
+llama3 (base)
+0.2517
+0.0339
+0.1222
+
+
+openhealth-doctor
+0.3122
+0.0517
+0.1628
+
+
+Relative gain
++24.0 %
++52.5 %
++33.2 %
+
+Gen. (n=50)
+llama3 (base)
+0.2582
+0.0316
+0.1239
+
+
+openhealth-doctor
+0.3271
+0.0614
+0.1806
+
+
+Relative gain
++26.7 %
++94.3 %
++45.8 %
+
+TABLE IV.  ROUGE F-SCORES (MEAN OVER 50 SAMPLES PER CONDITION). ONE BASE GENERALISATION SAMPLE FAILED (HTTP 500); n = 49 FOR THAT CELL.
+The fine-tuned model outperforms the base model on every metric in both conditions. The most informative finding is that ROUGE-1 on the generalisation set (0.327) exceeds ROUGE-1 on the memorisation set (0.312) — the fine-tuned model performs better on data it has never seen than on data it trained on. This is the strongest possible empirical signal against overfitting: rather than memorising individual training answers, the model has internalised the underlying response pattern of the medical-consultation register and transfers it to novel questions. The disproportionately large ROUGE-2 improvement (+94.3 % on generalisation) reflects the acquisition of domain-specific bigrams — phrases such as "blood pressure", "would recommend", and "consult a" — that are largely absent from base-model output.
+3)  Inference speed
+The fine-tuned model generates responses 2.5× faster than the base model (mean 25.2 s vs. 62.0 s, median 24.1 s vs. 58.4 s across the 100 evaluation samples). This is a consequence of the model learning a more concise medical-consultation style: fewer tokens generated at roughly the same per-token latency yields a significant wall-clock speedup, without any modification to the inference runtime itself.
+4)  Retrieval latency
+Retrieval latency was measured over 5 timed warm runs per method per query across 4 representative medical queries (n = 20 observations per method). Each method was called through a dedicated isolated HTTP endpoint to prevent cross-method cache contamination.
+Method
+Mean
+Median
+Min
+Max
+
+BM25 (Okapi)
+2057.9
+2054.1
+2029.0
+2091.2
+
+Dense (MMR)
+2161.4
+2155.4
+2124.6
+2214.2
+
+Hybrid RRF
+2155.0
+2152.6
+2113.1
+2212.0
+
+TABLE V.  AGGREGATE RETRIEVAL LATENCY IN MILLISECONDS (MEAN, MEDIAN, MIN, MAX) OVER 20 OBSERVATIONS PER METHOD (4 QUERIES × 5 WARM RUNS).
+All three methods operate within a shared ~2-second envelope dominated by ChromaDB's SQLite-backed disk I/O. BM25 is consistently the fastest (≈ 103 ms advantage over dense retrieval) and exhibits the lowest standard deviation in 3 of 4 query groups, reflecting its pure-RAM execution after index construction. Hybrid RRF latency is within 6 ms of dense retrieval alone — consistent with the parallel-execution model in which total wall-clock time is bounded by max(t_vec, t_bm25), with BM25 completing well inside the dense search window. We conclude that hybrid retrieval imposes no meaningful latency penalty.
+5)  Qualitative retrieval analysis
+Three representative queries illustrate the complementary strengths of sparse and dense retrieval. For "chest tightness and difficulty breathing", dense retrieval and hybrid fusion correctly surface heartDisease.pdf by bridging the semantic gap to "dyspnea"; pure BM25 fails because "dyspnea" is not a lexical match for "difficulty breathing". For "heart attack warning signs", BM25 achieves its highest observed score (11.34) because "heart attack" appears verbatim in the ACC/AHA chest-pain guideline; hybrid fusion additionally retrieves ArmAndNeckPain.pdf, which is clinically relevant (arm and neck pain as classic referred symptoms of myocardial infarction) and that neither individual retriever returns independently. For "paracetamol dosage adult", the drug is absent from the corpus; all methods return low-confidence best-effort matches, and the relevance threshold (τ = 0.020) correctly suppresses document injection so that the model answers from its fine-tuning without fabricating a citation.
+6)  Clinical rubric — three-condition evaluation
+Eight clinical test cases spanning vertigo, cardiac, paediatric, emergency, dermatological, psychiatric, neurological, and endocrine domains were drawn from the ChatDoctor corpus and evaluated under three conditions: (A) base LLaMA 3, no fine-tuning, no RAG; (B) openhealth-doctor fine-tuned, no RAG; (C) openhealth-doctor with hybrid RAG. Each response was scored on a four-axis rubric (factual accuracy, medical tone, conciseness, safety-referral), with each axis worth 0–2 points, for a maximum of 8.
+ID
+Topic
+A
+B
+C
+ΔT
+ΔR
+
+T1
+Vertigo / BPPV
+8
+8
+7
+0
+−1
+
+T2
+Chest pain + cardiac hx
+5
+8
+5
++3
+−3
+
+T3
+Paediatric diarrhoea
+7
+6
+8
+−1
++2
+
+T4
+Emergency — chest + arm
+5
+5
+7
+0
++2
+
+T5
+Fungal skin infection
+8
+8
+8
+0
+0
+
+T6
+Polypharmacy depression
+5
+6
+8
++1
++2
+
+T7
+Suspected mini-strokes
+6
+6
+8
+0
++2
+
+T8
+T2DM + abdominal pain
+5
+7
+7
++2
+0
+
+
+Mean
+6.1
+6.8
+7.2
++0.7
++0.4
+
+TABLE VI.  RUBRIC SCORES (OUT OF 8) ACROSS 8 CLINICAL TEST CASES. A = BASE, B = FINE-TUNED, C = FINE-TUNED + RAG; ΔT = B − A (FINE-TUNE GAIN); ΔR = C − B (RAG GAIN).
+Three observations stand out. First, the mean score rises monotonically across conditions (6.1 → 6.8 → 7.2), confirming the additive contribution of fine-tuning and RAG. Second, the full system correctly restores safety-referral behaviour on cases T4 (classical acute-coronary-syndrome presentation with chest pain radiating to arm) and T6 (polypharmacy with treatment-resistant depression), both of which the base model handles incorrectly — for T4, describing the presentation as possible acid reflux rather than urgently referring the patient, and for T6, asking clarifying questions about what "exhausted" means rather than flagging the polypharmacy risk. Third, the RAG contribution is conditional on corpus coverage: on the four cases whose topics are well-represented in the six-PDF corpus (T3, T4, T6, T7), RAG adds an average of +2.0 rubric points; on cases whose topics lie outside the corpus (T1, T2, T5, T8), RAG adds −1.0 on average, caused by low-confidence retrievals distracting the model. The τ = 0.020 relevance threshold was introduced specifically to suppress this degradation mode and is active in the results reported in column C.
+7)  Keyword coverage
+Each test case defines 2–3 keyword groups capturing the expected clinical content; a group is considered "hit" when at least one of its keywords appears in the model's response. Keyword hit rates follow the same monotonic trend as the rubric scores: 13/20 (65 %) for the base model, 15/20 (75 %) for the fine-tuned-only model, and 16/20 (80 %) for the full system.
+V.  CONCLUSION
+OpenHealth demonstrates that a clinically useful medical question-answering system can be constructed entirely on consumer hardware — an 8-GB laptop GPU — by composing three well-understood ingredients: 4-bit quantisation of an 8-billion-parameter LLaMA 3 backbone, parameter-efficient LoRA adaptation that modifies only 0.26 % of the model's parameters, and confidence-gated hybrid retrieval that combines BM25 with dense vector search through Reciprocal Rank Fusion. Across three independent evaluation frameworks — ROUGE similarity, an adversarial eight-case clinical rubric, and retrieval-latency benchmarks — each ingredient contributes measurable, largely additive gains. The fine-tuned model exceeds the base model on every ROUGE metric in both memorisation and generalisation conditions, with generalisation scores exceeding memorisation scores — a strong empirical signal against overfitting. Hybrid retrieval matches dense-retrieval latency while surfacing cross-domain clinical associations that neither individual retriever returns. The relevance threshold eliminates the failure mode in which irrelevant retrieved context degrades output below the no-retrieval baseline, a concern that is particularly acute in medicine. The full system restores correct safety-referral behaviour on adversarial chest-pain and polypharmacy cases where the base model systematically under-triages.
+Three limitations must be acknowledged. The eight-case rubric is small and was authored by the research team; a larger clinician-reviewed evaluation on a held-out test set is required before any claim of clinical validity. Second, the model is deliberately under-trained at 7.1 % of one epoch on the 112,165-sample ChatDoctor corpus; the loss curve had not converged at termination, and a full-epoch run (approximately 14,000 steps) is a near-term extension. Third, the six-PDF retrieval corpus leaves systematic gaps outside cardiovascular and respiratory domains. Future work will (i) extend training to a complete epoch; (ii) expand the retrieval corpus to cover the top query domains surfaced by user analytics; (iii) apply mechanistic interpretability techniques — including sparse attention analysis, cross-layer transcoders, and orthogonality-regularised intervenable features — to localise the attention heads and residual-stream features that control safety-referral behaviour and that mediate the integration of retrieved context; and (iv) migrate to a production-grade vector store (pgvector or Qdrant) that eliminates the ~2-second SQLite-dominated latency floor reported in Table V.
+REFERENCES
+[1]  E. J. Hu, Y. Shen, P. Wallis, Z. Allen-Zhu, Y. Li, S. Wang, L. Wang, and W. Chen, "LoRA: Low-Rank Adaptation of Large Language Models," in Proc. Int. Conf. Learning Representations (ICLR), 2022.
+[2]  Z. Qiu, S. Buchholz, T. Z. Xiao, M. Dax, B. Schölkopf, and W. Liu, "Reparameterized LLM Training via Orthogonal Equivalence Transformation," in Proc. 39th Conf. Neural Information Processing Systems (NeurIPS), 2025. arXiv:2506.08001.
+[3]  T. Dettmers, A. Pagnoni, A. Holtzman, and L. Zettlemoyer, "QLoRA: Efficient Finetuning of Quantized LLMs," in Proc. Neural Information Processing Systems (NeurIPS), 2023.
+[4]  P. Lewis et al., "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks," in Advances in Neural Information Processing Systems, vol. 33, pp. 9459–9474, 2020.
+[5]  V. Karpukhin et al., "Dense Passage Retrieval for Open-Domain Question Answering," in Proc. 2020 Conf. Empirical Methods in Natural Language Processing (EMNLP), pp. 6769–6781, 2020.
+[6]  S. Robertson and H. Zaragoza, "The Probabilistic Relevance Framework: BM25 and Beyond," Foundations and Trends in Information Retrieval, vol. 3, no. 4, pp. 333–389, 2009.
+[7]  G. V. Cormack, C. L. A. Clarke, and S. Büttcher, "Reciprocal Rank Fusion outperforms Condorcet and individual Rank Learning Methods," in Proc. 32nd Int. ACM SIGIR Conf., pp. 758–759, 2009.
+[8]  Y. Li, Z. Li, K. Zhang, R. Dan, S. Jiang, and Y. Zhang, "ChatDoctor: A Medical Chat Model Fine-Tuned on a Large Language Model Meta-AI (LLaMA) Using Medical Domain Knowledge," Cureus, vol. 15, no. 6, 2023.
+[9]  H. Touvron et al., "Llama: Open and Efficient Foundation Language Models," arXiv preprint arXiv:2302.13971, 2023.
+[10]  K. Singhal et al., "Towards Expert-Level Medical Question Answering with Large Language Models," Nature, vol. 620, pp. 172–180, 2023.
+[11]  A. Vaswani et al., "Attention Is All You Need," in Advances in Neural Information Processing Systems, vol. 30, 2017.
+[12]  C. Raffel et al., "Exploring the Limits of Transfer Learning with a Unified Text-to-Text Transformer," Journal of Machine Learning Research, vol. 21, pp. 1–67, 2020.
+[13]  C.-Y. Lin, "ROUGE: A Package for Automatic Evaluation of Summaries," in Proc. Workshop on Text Summarization Branches Out, pp. 74–81, 2004.
+[14]  J. Johnson, M. Douze, and H. Jégou, "Billion-Scale Similarity Search with GPUs," IEEE Transactions on Big Data, vol. 7, no. 3, pp. 535–547, 2021.
+[15]  Ollama Project, "Ollama: Get up and running with large language models locally," Online: https://ollama.com, accessed April 2026.
+[16]  Unsloth AI, "Unsloth: 2× faster LLM fine-tuning on consumer GPUs," Online: https://unsloth.ai, accessed April 2026.
+[17]  ChromaDB Project, "Chroma — the AI-native open-source embedding database," Online: https://www.trychroma.com, accessed April 2026.
+[18]  Hugging Face, "Transformers and PEFT library documentation," Online: https://huggingface.co/docs, accessed April 2026.
+AUTHORS' PROFILES
+
+
+
+Kevin Joy Thomas  B.E. student, Information Technology
+is a final-year undergraduate in the Department of Information Technology at MVSR Engineering College, Hyderabad, India. His interests span large-language-model systems, parameter-efficient fine-tuning, retrieval-augmented generation, workflow automation, and production AI engineering. He led the system-design, LoRA fine-tuning, retrieval-pipeline, and evaluation-framework implementation for the OpenHealth project.
+
+Aayush Potdar  B.E. student, Information Technology
+is a final-year undergraduate in the Department of Information Technology at MVSR Engineering College, Hyderabad, India. His interests include information retrieval, vector databases, and frontend engineering. He contributed to the document ingestion pipeline, hybrid retrieval benchmarking, and the browser-facing chat interface of the OpenHealth system.
+
+
+
+Shobith Nathan  B.E. student, Information Technology
+is a final-year undergraduate in the Department of Information Technology at MVSR Engineering College, Hyderabad, India. His interests include backend microservice architecture, authentication systems, and database design. He contributed to the API gateway, authentication service, and PostgreSQL/Redis data-layer components of the OpenHealth system.
+
+

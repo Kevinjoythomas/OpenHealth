@@ -58,7 +58,7 @@ $services = @(
 
 foreach ($svc in $services) {
     try {
-        Invoke-WebRequest -Uri $svc.url -TimeoutSec 5 -UseBasicParsing -ErrorAction Stop | Out-Null
+        Invoke-WebRequest -Uri $svc.url -TimeoutSec 8 -UseBasicParsing -ErrorAction Stop | Out-Null
         Write-Host "  OK  $($svc.name)" -ForegroundColor Green
     } catch {
         Write-Host "  !!  $($svc.name) not responding yet (may still be starting)" -ForegroundColor Red

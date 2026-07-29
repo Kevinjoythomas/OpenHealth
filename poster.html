@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>OpenHealth Research Poster</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&amp;family=Manrope:wght@600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary": "#506169",
+                        "outline-variant": "#bec8ca",
+                        "surface-container-highest": "#e1e3e4",
+                        "secondary-fixed-dim": "#b8c9d3",
+                        "on-primary-fixed-variant": "#004f58",
+                        "inverse-on-surface": "#eff1f2",
+                        "on-secondary-container": "#55656d",
+                        "on-error": "#ffffff",
+                        "primary-fixed-dim": "#84d3e0",
+                        "surface-variant": "#e1e3e4",
+                        "tertiary-fixed": "#ffdbd0",
+                        "on-tertiary-fixed-variant": "#852300",
+                        "tertiary-fixed-dim": "#ffb59f",
+                        "on-error-container": "#93000a",
+                        "on-background": "#191c1d",
+                        "on-tertiary-container": "#ffd9ce",
+                        "on-primary": "#ffffff",
+                        "on-surface": "#191c1d",
+                        "on-primary-fixed": "#001f24",
+                        "background": "#f8fafb",
+                        "surface-container-lowest": "#ffffff",
+                        "error": "#ba1a1a",
+                        "on-tertiary": "#ffffff",
+                        "surface-container-low": "#f2f4f5",
+                        "surface-container-high": "#e6e8e9",
+                        "inverse-surface": "#2e3132",
+                        "primary-container": "#0b6e7a",
+                        "on-surface-variant": "#3f484a",
+                        "tertiary": "#8e2600",
+                        "surface-dim": "#d8dadb",
+                        "on-secondary-fixed-variant": "#394951",
+                        "inverse-primary": "#84d3e0",
+                        "secondary-container": "#d1e2ec",
+                        "secondary-fixed": "#d4e5ef",
+                        "surface-tint": "#006874",
+                        "primary": "#00545e",
+                        "surface": "#f8fafb",
+                        "on-secondary-fixed": "#0d1e25",
+                        "error-container": "#ffdad6",
+                        "on-tertiary-fixed": "#3a0a00",
+                        "surface-bright": "#f8fafb",
+                        "primary-fixed": "#a0effd",
+                        "on-secondary": "#ffffff",
+                        "surface-container": "#eceeef",
+                        "on-primary-container": "#9feefb",
+                        "tertiary-container": "#b33a0f",
+                        "outline": "#6f797b"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "fontFamily": {
+                        "headline": ["Manrope", "sans-serif"],
+                        "body": ["Inter", "sans-serif"],
+                        "label": ["Inter", "sans-serif"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        /* Base styles from design system */
+        body {
+            background-color: #f8fafb;
+            color: #191c1d;
+            font-family: "Inter", sans-serif;
+            letter-spacing: 0.02em;
+        }
+        h1, h2, h3, h4, h5, h6 {
+            font-family: "Manrope", sans-serif;
+        }
+        
+        /* Wider presentation canvas */
+        .poster-container {
+            width: 100%;
+            max-width: 13in;
+            min-height: 11in;
+            margin: 0 auto;
+            background-color: #f8fafb;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Ghost Waveform Pattern */
+        .bg-waveform {
+            background-image: url("data:image/svg+xml,%3Csvg width='100' height='20' viewBox='0 0 100 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 10 L20 10 L25 5 L35 15 L40 10 L100 10' stroke='%236f797b' stroke-width='1' fill='none' opacity='0.1'/%3E%3C/svg%3E");
+            background-repeat: repeat-x;
+            background-position: center;
+        }
+
+        /* Glassmorphism utility */
+        .glass-card {
+            background-color: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+
+        @media print {
+            body {
+                padding: 0;
+                background-color: #ffffff;
+            }
+
+            .poster-container {
+                max-width: 13in;
+                min-height: 11in;
+                border-radius: 0;
+                box-shadow: none;
+            }
+        }
+    </style>
+</head>
+<body class="antialiased p-3 md:p-6 bg-surface-container flex flex-col items-center">
+<div class="poster-container rounded-xl">
+<!-- HEADER SECTION -->
+<div class="relative bg-gradient-to-br from-primary to-primary-container p-8 md:p-10 text-white overflow-hidden">
+<!-- Decorative neural net bleed -->
+<div class="absolute -top-24 -right-24 opacity-20 pointer-events-none">
+<svg height="400" viewbox="0 0 400 400" width="400" xmlns="http://www.w3.org/2000/svg">
+<circle cx="200" cy="200" fill="none" r="150" stroke="white" stroke-width="2"></circle>
+<circle cx="200" cy="200" fill="none" r="100" stroke="white" stroke-dasharray="10 5" stroke-width="2"></circle>
+<path d="M50 200 L350 200 M200 50 L200 350" stroke="white" stroke-width="1"></path>
+</svg>
+</div>
+<div class="relative z-10 max-w-6xl">
+<h1 class="text-3xl md:text-4xl font-extrabold tracking-tight mb-4 leading-tight">
+                OpenHealth &mdash; A Quantised 4-bit LLaMA 3 with Hybrid RAG for Low-Cost, Locally Deployable Medical Question Answering
+            </h1>
+<p class="text-lg md:text-xl font-body italic text-primary-fixed mb-8 opacity-90">
+                Democratizing Clinical Intelligence through Resource-Efficient Architecture
+            </p>
+<div class="flex items-center gap-6 text-on-primary-fixed">
+<div class="max-w-3xl">
+<p class="font-bold text-lg md:text-xl mb-1">Kevin Joy Thomas &middot; Shobith Nathan &middot; Aayush Pothar</p>
+<p class="text-sm opacity-90 leading-relaxed">
+                        Project Advisor: <span class="font-semibold">Dr. B. Vasavi</span>, Associate Professor, Department of Information Technology<br/>
+                        Maturi Venkata Subba Rao (MVSR) Engineering College, Hyderabad
+                    </p>
+</div>
+</div>
+</div>
+</div>
+<!-- MAIN GRID (3 Columns for md+ screens) -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-6 p-8 md:p-10">
+<!-- LEFT COLUMN (Abstract, Objectives) -->
+<div class="md:col-span-4 flex flex-col gap-8">
+<!-- Abstract -->
+<section class="bg-surface-container-low p-8 rounded-xl relative overflow-hidden">
+<div class="absolute -right-4 -bottom-4 opacity-10">
+<span class="material-symbols-outlined text-9xl text-primary">description</span>
+</div>
+<h2 class="font-headline font-semibold text-2xl text-primary mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined">summarize</span> Abstract
+                </h2>
+<p class="text-secondary text-sm leading-relaxed relative z-10">
+                    Deploying clinical LLMs in low-resource settings is constrained by compute cost, privacy risk, and unsafe hallucinations. OpenHealth addresses these limits with a 4-bit quantised LLaMA 3 8B model, LoRA adaptation, and confidence-gated hybrid retrieval. The full pipeline runs locally on an RTX 3050 Laptop GPU with 8 GB VRAM while improving unseen-case ROUGE-1 by 26.7% and raising the clinical rubric score from 6.1/8 to 7.2/8.
+                </p>
+</section>
+<!-- Objectives -->
+<section>
+<h2 class="font-headline font-semibold text-2xl text-primary mb-6 border-b border-outline-variant/30 pb-2">Objectives</h2>
+<ul class="space-y-6">
+<li class="flex items-start gap-4">
+<div class="bg-secondary-container p-2 rounded-lg text-primary flex-shrink-0">
+<span class="material-symbols-outlined">memory</span>
+</div>
+<div>
+<h3 class="font-headline font-bold text-on-surface">Reduce Hardware Dependency</h3>
+<p class="text-sm text-secondary">Enable clinical AI on an 8 GB consumer GPU through 4-bit quantisation.</p>
+</div>
+</li>
+<li class="flex items-start gap-4">
+<div class="bg-secondary-container p-2 rounded-lg text-primary flex-shrink-0">
+<span class="material-symbols-outlined">security</span>
+</div>
+<div>
+<h3 class="font-headline font-bold text-on-surface">Ensure Data Privacy</h3>
+<p class="text-sm text-secondary">Local deployment eliminates external API data transmission.</p>
+</div>
+</li>
+<li class="flex items-start gap-4">
+<div class="bg-secondary-container p-2 rounded-lg text-primary flex-shrink-0">
+<span class="material-symbols-outlined">verified</span>
+</div>
+<div>
+<h3 class="font-headline font-bold text-on-surface">Maintain High Accuracy</h3>
+<p class="text-sm text-secondary">Prioritise clinically grounded answers through hybrid retrieval and evidence gating.</p>
+</div>
+</li>
+</ul>
+</section>
+</div>
+<!-- CENTRE COLUMN (Architecture, Key Innovation, Methodology) -->
+<div class="md:col-span-4 flex flex-col gap-8">
+<!-- Architecture Centerpiece -->
+<section class="bg-surface-container-low p-8 rounded-xl">
+<h2 class="font-headline font-semibold text-2xl text-primary mb-8 text-center">System Architecture</h2>
+<!-- Diagram Container -->
+<div class="relative w-full bg-surface rounded-xl overflow-hidden border border-outline-variant/15">
+<img src="Screenshot 2026-04-17 022345.png" alt="System Architecture Diagram" class="w-full h-auto object-contain" />
+</div>
+<div class="grid grid-cols-2 gap-3 mt-5">
+<div class="bg-surface-container px-4 py-3 rounded-lg border border-outline-variant/15">
+<div class="text-[10px] uppercase tracking-wide text-secondary mb-1">Services</div>
+<div class="font-headline font-bold text-base text-on-surface">5 microservices</div>
+</div>
+<div class="bg-surface-container px-4 py-3 rounded-lg border border-outline-variant/15">
+<div class="text-[10px] uppercase tracking-wide text-secondary mb-1">Corpus</div>
+<div class="font-headline font-bold text-base text-on-surface">6 medical PDFs</div>
+</div>
+<div class="bg-surface-container px-4 py-3 rounded-lg border border-outline-variant/15">
+<div class="text-[10px] uppercase tracking-wide text-secondary mb-1">Fusion</div>
+<div class="font-headline font-bold text-base text-on-surface">BM25 + RRF</div>
+</div>
+<div class="bg-surface-container px-4 py-3 rounded-lg border border-outline-variant/15">
+<div class="text-[10px] uppercase tracking-wide text-secondary mb-1">Gate</div>
+<div class="font-headline font-bold text-base text-on-surface">&tau; = 0.020</div>
+</div>
+</div>
+</section>
+<!-- Key Innovation Callout -->
+<section class="bg-primary-container text-white p-8 rounded-xl shadow-lg relative overflow-hidden">
+<div class="absolute -right-8 -top-8 opacity-10">
+<span class="material-symbols-outlined text-9xl">lightbulb</span>
+</div>
+<h3 class="font-label text-primary-fixed text-xs tracking-widest uppercase mb-2">Key Innovation</h3>
+<div class="flex items-end gap-4 mb-4">
+<span class="font-headline font-extrabold text-5xl">0.26%</span>
+<span class="font-body text-sm mb-1 opacity-90">Weights Trained</span>
+</div>
+<p class="font-body text-sm leading-relaxed opacity-80">
+                    Rank-8 LoRA with &alpha; = 16 updates only 20.97M of 8.03B parameters, which was enough to shift the model into a medical consultation style without the cost of full fine-tuning or cloud inference.
+                </p>
+</section>
+<section class="bg-surface-container-low p-8 rounded-xl">
+<h2 class="font-headline font-semibold text-2xl text-primary mb-6 border-b border-outline-variant/30 pb-2">Methodology</h2>
+<div class="space-y-5">
+<div class="flex items-start gap-4">
+<div class="bg-secondary-container p-2 rounded-lg text-primary flex-shrink-0">
+<span class="material-symbols-outlined">neurology</span>
+</div>
+<div>
+<h3 class="font-headline font-bold text-on-surface">1. Base Model Selection</h3>
+<p class="text-sm text-secondary">LLaMA 3 8B was chosen for its strong instruction-following baseline and stable performance under low-memory deployment constraints.</p>
+</div>
+</div>
+<div class="flex items-start gap-4">
+<div class="bg-secondary-container p-2 rounded-lg text-primary flex-shrink-0">
+<span class="material-symbols-outlined">memory</span>
+</div>
+<div>
+<h3 class="font-headline font-bold text-on-surface">2. 4-bit Quantisation</h3>
+<p class="text-sm text-secondary">NF4 4-bit quantisation via bitsandbytes compresses the model to roughly 5.4 GB VRAM, enabling operation on an 8 GB laptop GPU.</p>
+</div>
+</div>
+<div class="flex items-start gap-4">
+<div class="bg-secondary-container p-2 rounded-lg text-primary flex-shrink-0">
+<span class="material-symbols-outlined">hub</span>
+</div>
+<div>
+<h3 class="font-headline font-bold text-on-surface">3. Hybrid RAG Pipeline</h3>
+<p class="text-sm text-secondary">BM25 and nomic-embed-text retrieval run in parallel, are fused with Reciprocal Rank Fusion, and only pass context when the score exceeds 0.020.</p>
+</div>
+</div>
+<div class="flex items-start gap-4">
+<div class="bg-secondary-container p-2 rounded-lg text-primary flex-shrink-0">
+<span class="material-symbols-outlined">tune</span>
+</div>
+<div>
+<h3 class="font-headline font-bold text-on-surface">4. LoRA Fine-Tuning</h3>
+<p class="text-sm text-secondary">Rank-8 LoRA adapters were trained on 112,165 ChatDoctor consultations, updating only 0.26% of total model parameters.</p>
+</div>
+</div>
+</div>
+</section>
+</div>
+<!-- RIGHT COLUMN (Results, Charts, Safety) -->
+<div class="md:col-span-4 flex flex-col gap-8">
+<!-- Results Cards -->
+<section>
+<h2 class="font-headline font-semibold text-2xl text-primary mb-6 border-b border-outline-variant/30 pb-2">ROUGE-Focused Evaluation</h2>
+<p class="text-sm text-secondary mb-5">Primary quality signal on the poster is now ROUGE against held-out clinician answers, with rubric and safety retained as supporting clinical checks.</p>
+<div class="grid grid-cols-2 gap-4">
+<div class="bg-surface-container p-6 rounded-xl border border-outline-variant/15 bg-waveform">
+<span class="material-symbols-outlined text-primary mb-2">trending_up</span>
+<div class="font-headline font-bold text-3xl text-on-surface mb-1">0.327</div>
+<div class="font-label text-[10px] text-secondary uppercase tracking-wide">ROUGE-1 on Unseen Cases</div>
+</div>
+<div class="bg-surface-container p-6 rounded-xl border border-outline-variant/15">
+<span class="material-symbols-outlined text-primary mb-2">data_usage</span>
+<div class="font-headline font-bold text-3xl text-on-surface mb-1">+94.3%</div>
+<div class="font-label text-[10px] text-secondary uppercase tracking-wide">ROUGE-2 Gain vs Base</div>
+</div>
+<div class="bg-surface-container p-6 rounded-xl border border-outline-variant/15">
+<span class="material-symbols-outlined text-tertiary mb-2">health_and_safety</span>
+<div class="font-headline font-bold text-3xl text-on-surface mb-1">7.2/8</div>
+<div class="font-label text-[10px] text-secondary uppercase tracking-wide">Clinical Rubric Score</div>
+</div>
+<div class="bg-surface-container p-6 rounded-xl border border-outline-variant/15">
+<span class="material-symbols-outlined text-tertiary mb-2">emergency</span>
+<div class="font-headline font-bold text-3xl text-on-surface mb-1">4 Cases</div>
+<div class="font-label text-[10px] text-secondary uppercase tracking-wide">Critical Safety Failures Corrected</div>
+</div>
+</div>
+</section>
+<!-- Safety Callout -->
+<section class="bg-tertiary-container/10 border-l-4 border-tertiary p-6 rounded-r-xl">
+<h3 class="font-headline font-bold text-tertiary text-lg mb-2 flex items-center gap-2">
+<span class="material-symbols-outlined">tune</span> Confidence-Gated Retrieval
+                </h3>
+<p class="text-sm text-secondary leading-relaxed">
+                    Context is injected only when the top fused RRF score clears the 0.020 threshold. If corpus coverage is weak, the model answers without citations instead of trusting irrelevant retrievals.
+                </p>
+</section>
+<!-- Training Loss Chart -->
+<section class="bg-surface-container-low p-6 rounded-xl">
+<h2 class="font-headline font-semibold text-2xl text-primary mb-4 border-b border-outline-variant/30 pb-2">Training Loss Over Steps</h2>
+<img src="Screenshot 2026-04-17 022443.png" alt="Training Loss Over Steps" class="w-full h-auto rounded-lg" />
+</section>
+<!-- Key Findings -->
+<section>
+<h2 class="font-headline font-semibold text-2xl text-primary mb-6 border-b border-outline-variant/30 pb-2">Key Findings</h2>
+<ul class="space-y-4 text-sm text-on-surface-variant">
+<li class="flex gap-3">
+<span class="material-symbols-outlined text-primary text-xl">check_circle</span>
+<span><strong>ROUGE is the main quality signal:</strong> the fine-tuned model reaches ROUGE-1 = 0.327 on unseen cases, outperforming both its base generalisation score and its memorisation split.</span>
+</li>
+<li class="flex gap-3">
+<span class="material-symbols-outlined text-primary text-xl">check_circle</span>
+<span><strong>Phrase-level improvement is substantial:</strong> ROUGE-2 improves by 94.3%, showing stronger acquisition of medical phrasing and clinician-style response patterns.</span>
+</li>
+<li class="flex gap-3">
+<span class="material-symbols-outlined text-primary text-xl">check_circle</span>
+<span><strong>Clinical checks still matter:</strong> rubric score and safety recovery remain on the poster because ROUGE alone does not capture urgent-referral behaviour.</span>
+</li>
+</ul>
+</section>
+</div>
+</div>
+<!-- FOOTER SECTION -->
+<footer class="border-t border-outline-variant/20 bg-surface-container-low w-full py-8 px-8 md:px-10">
+<div class="text-teal-900 font-['Inter'] text-sm tracking-wide">
+<span class="font-bold text-primary uppercase mr-2">Conclusion:</span>
+<span class="text-secondary">OpenHealth shows that clinically grounded QA does not require datacentre hardware. Quantised local inference, low-rank adaptation, and confidence-gated hybrid retrieval deliver safer, faster answers while keeping patient data on-device.</span>
+</div>
+</footer>
+</div>
+</body></html>

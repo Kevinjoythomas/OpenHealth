@@ -1,0 +1,262 @@
+% ML4H 2026 Proceedings (PMLR). Replace the preamble below with the official
+% ml4h2026/jmlr style at submission; this generic PMLR-ish preamble compiles standalone.
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{booktabs,graphicx,amsmath,amssymb,hyperref,microtype,xcolor}
+\usepackage[numbers]{natbib}
+\graphicspath{{../results/}}
+\title{Saying "See a Doctor" Is Not Triage: Lexical Safety Rubrics Mask Under-Triage in Fine-Tuned Medical Language Models}
+\author{Anonymous submission --- ML4H 2026 Proceedings Track (double-blind)}
+\date{}
+\begin{document}
+\maketitle
+\begin{abstract}
+Parameter-efficient fine-tuning (PEFT) of open 7--8B language models is a popular route to locally-deployable medical chatbots, and such systems are routinely evaluated with lightweight automatic rubrics that score a "safety" axis by the presence of escalation cues (e.g., \textit{emergency, doctor, call, immediately}). We show this evaluation practice is not merely noisy but \textbf{actively gamed by fine-tuning}. On a benchmark of \textbf{96 novel, contamination-verified clinical vignettes} (72 unambiguous emergencies across 12 specialties + 24 matched-benign controls, authored de novo so none overlaps the training corpus), we compare a LLaMA-3-8B base model against its version fine-tuned with 4-bit QLoRA on 112k doctor--patient dialogues; every reply is blind-judged by physician-style LLM judges on whether it appropriately escalates. \textbf{Both models under-triage emergencies identically --- each appropriately escalates only 24\% (missing 76\%)}, and a paired test finds no significant difference between them (McNemar, all conditions n.s.). Yet a keyword safety rubric would report the fine-tune as failing just \textbf{10\%} of emergencies versus \textbf{65\%} for the base --- a \textbf{55-percentage-point} apparent safety gain (a 6.5\(\times\) failure-rate ratio) between two models that escalate identically --- because fine-tuning distils the corpus's escalation \textit{vocabulary} into 90\% of the fine-tune's answers, including the three-quarters that never escalate. The rubric is a valid safety proxy for the base model (Cohen's \(\kappa\)=0.61; AUROC 0.91 for keyword-count predicting true escalation) but its validity \textbf{collapses for the fine-tune} (\(\kappa\)=0.03; AUROC 0.67; PABAK -0.38): \textbf{68\% of the fine-tune's emergency answers are keyword-"safe" yet under-triage} (vs 14\% for base) --- equivalently, of the answers its own rubric labels "safe", 75\% are in fact under-triage (vs 40\% for base) --- and the keyword count in its under-triaging answers rises 7-fold (0.21\(\rightarrow\)1.57). We trace the cause to the training data: a blinded audit finds the corpus's own physician answers escalate only \textbf{13\%} of 167 genuine emergencies while 79.5\% contain a safety keyword --- the fine-tune faithfully reproduces a corpus that is \textit{lexically safe but behaviourally under-triaging}. This corpus (HealthCareMagic/ChatDoctor) is one of the most widely-used open medical fine-tuning datasets, so the failure mode is a concern for models built the same way; we demonstrate the \textit{catastrophic} form on one such fine-tune and show it is \textbf{corpus-specific} --- an independently-trained medical fine-tune that instead learns genuine escalation is not gamed (\S{}4.11). The generalizable lesson is that lexical safety scores can be invalidated by fine-tuning-induced register shift. \textbf{Fine-tuning did not make the model safer or more dangerous; it made the standard metric unable to tell.} It also entrenches the failure: a one-line triage instruction that lifts the base model's escalation to \textbf{97\%} raises the fine-tune's to only \textbf{49\%}, so fine-tuning both hides the under-triage from the metric and hardens it against prompt-based correction. We argue medical-LLM safety evaluation must use semantic, escalation-sensitive, multi-judge triage metrics, and we release the benchmark, rubric, all judgments, and harness.
+\end{abstract}
+
+\textit{Anonymous submission --- ML4H 2026 Proceedings Track (double-blind). Author/affiliation/links removed for review.}
+
+
+\section{Introduction}
+
+Locally-deployable medical question-answering systems are attractive for cost and privacy reasons: a 4-bit-quantized 8B model with retrieval augmentation can run on a single consumer GPU and keeps patient text on-device. A standard recipe has emerged --- take an open instruction model, adapt it with LoRA/QLoRA on a corpus of doctor--patient dialogues, add a retrieval pipeline, and evaluate with a mix of ROUGE-style overlap and a small hand-built clinical rubric. On such rubrics the recipe looks successful: fine-tuning shifts the model into a fluent clinical register and "improves safety."
+
+
+This paper interrogates that success. The clinically decisive behavior for a medical assistant is \textbf{triage}: recognizing a presentation that needs urgent in-person care and saying so. We ask whether the automatic rubrics used to certify these systems actually measure triage --- and find that, for a fine-tuned model, they do not. On 72 novel emergencies the base and fine-tuned models under-triage \textit{identically} (both escalate only 24\%), yet a keyword rubric reports the fine-tune as \textbf{6.5\(\times\) safer}, because fine-tuning teaches the model to \textit{say} the words the rubric rewards ("you should consult a doctor") without conveying urgency. The result is not a more dangerous model --- it is a model whose danger the standard metric can no longer see.
+
+
+\textbf{Contributions.}
+
+
+1. \textbf{A contamination-free clinical safety benchmark} --- 96 vignettes authored de novo (72 emergencies across 12 specialties + 24 matched-benign controls), with a released multi-judge triage-evaluation protocol.
+
+
+2. \textbf{The headline result:} a common keyword safety rubric certifies a QLoRA-fine-tuned medical LLM as 6.5\(\times\) safer than its base model (10\% vs 65\% "failures") while a blinded clinical judge finds them statistically identical (both escalate 24\% of emergencies; McNemar n.s.).
+
+
+3. \textbf{A quantified metric-validity collapse:} keyword--judge agreement falls from valid (Cohen's \(\kappa\)=0.61, AUROC 0.91) for the base model to no-better-than-chance (\(\kappa\)=0.03, AUROC 0.67) for the fine-tune; of the answers the rubric labels "safe", 75\% are in fact under-triage for the fine-tune vs 40\% for the base; the keyword floor in non-escalating answers rises 7-fold.
+
+
+4. \textbf{A mechanism, and its scope:} the fine-tuning corpus itself escalates only ~13\% of emergencies (judge-labeled) while 79.5\% of its answers contain safety keywords --- the model distils a corpus that is lexically safe but behaviourally under-triaging; because this corpus is among the most widely-used open medical fine-tuning datasets, the failure mode is a concern for models built the same way. A second, independently-trained medical fine-tune that instead learns genuine escalation is \textit{not} gamed (\S{}4.11), consistent with the failure being a property of the training corpus rather than of PEFT itself.
+
+
+Our intent is constructive: the system we study is our own, and we release the benchmark, rubric, judgments, and harness. The finding is a caution for the field, not a result about one bad model.
+
+
+\section{Related Work}
+
+\textbf{PEFT and what it preserves.} LoRA [Hu'22] and QLoRA [Dettmers'23] adapt large models by training low-rank updates. Recent work studies what PEFT \textit{retains}: \textit{LoRA Learns Less and Forgets Less} [Biderman'24, TMLR] frames a stability--plasticity trade-off, and PEFT-Arena [Huang'26] benchmarks adaptation vs. forgetting across PEFT methods, finding orthogonal finetuning best preserves general capability. We complement this literature: rather than general-capability retention, we measure a \textit{task-critical safety behavior} (emergency triage) and find that ordinary task SFT leaves it unchanged yet makes a naive lexical safety metric unable to detect the pre-existing failure.
+
+
+\textbf{RAG robustness.} Retrieval can hurt as well as help: irrelevant or distracting passages degrade readers [Cuconasu'24 SIGIR; Yoran'24 ICLR], retrieval corpora can be poisoned [Zou'25 USENIX], and adding retrieval can make general LLMs \textit{less} safe on harmful queries --- \textit{RAG LLMs are Not Safer} [An'25 NAACL] reports the unsafe-response rate of Llama-3-8B rising from 0.3\% to 9.2\% with RAG. The health-domain analogue [Amirshahi'25] shows adversarial medical evidence degrades answer stance. Our dependent variable is emergency triage; with the corrected 2048-token context window retrieval helps \textit{neither} model escalate more on either benchmark (base escalation is highest with no retrieval), so the headline finding is orthogonal to retrieval --- it concerns what fine-tuning does to the \textit{metric}.
+
+
+\textbf{Medical-LLM safety evaluation.} HealthBench [Arora'25, OpenAI] grades 5,000 conversations against 48,562 physician rubric criteria, explicitly penalizing both under- and over-escalation; MedHELM [Bedi'25] reports an LLM-jury reliability of ICC 0.47 against clinicians. Red-teaming studies [Chang'25 npj Digit. Med.; DAS, Yan'25] show medical LLMs fail under adaptive stress. Our work isolates the \textit{measurement} failure that lets an unsafe model pass.
+
+
+\textbf{LLM-as-judge.} LLM judges correlate with humans [Liu'23 G-Eval; Zheng'23 MT-Bench] but carry biases (position, length, self-preference) [Zheng'23; Ye'25 CALM], motivating juries of diverse models [Verga'24 PoLL] and clinical-rubric judges validated against physicians [npj'25 PDSQI-9, ICC 0.82]. We adopt a multi-judge protocol (Claude + two independent open judges) with reported inter-rater reliability, plus a blinded clinician-validation subset (provided; not yet returned).
+
+
+\textbf{Metric gaming, Goodhart's law, and shortcut learning.} In its general form our finding is a known failure mode: when a measure becomes a target it ceases to be a good measure [Goodhart; Strathern'97], and models optimize surface features correlated with --- but not identical to --- the goal, studied as \textit{specification gaming} / \textit{reward hacking} [Amodei'16 Concrete Problems; Krakovna'20; Pan'22 ICLR; Skalse'22 NeurIPS] and \textit{shortcut learning} [Geirhos'20 Nat. Mach. Intell.]. We do not claim to discover that surface-feature proxies can be gamed. Our contribution is a specific, consequential \textit{instantiation} that these general results do not supply: (i) a \textbf{fine-tuning-induced, model-dependent} collapse of a \textit{particular deployed medical-safety metric} --- valid for the base model, invalid for exactly the fine-tuned model one would ship; (ii) quantified as a base-vs-fine-tune \textbf{keyword--judge agreement contrast} rather than asserted; and (iii) \textbf{traced to an identifiable, widely-used training corpus} whose own escalation behavior we directly audit. Crucially, the gaming here is \textit{not} adversarial optimization against the metric --- no one optimized the rubric --- but an \textbf{incidental} by-product of ordinary task SFT, which makes it more insidious: the evaluation is defeated by a developer who is not trying to defeat it.
+
+
+\section{System and Experimental Design}
+
+\textbf{System under study.} A LLaMA-3-8B-Instruct backbone in 4-bit (NF4) form, adapted with LoRA (rank r=8, \(\alpha\)=16; 20.97M trainable parameters, 0.26\% of the model) on 112,165 ChatDoctor / HealthCareMagic doctor--patient pairs for 1,000 steps. Inference is served via Ollama (Q4\_K\_M). A hybrid retrieval service combines Okapi BM25 and \texttt{nomic-embed-text} dense vectors over a ChromaDB store of six medical reference PDFs, fused by Reciprocal Rank Fusion (k=60) with a relevance gate \(\tau\)=0.020. \textit{Hardware honesty:} adaptation was performed on a single cloud \textbf{T4} GPU (\(\approx\)2--3 h); the system \textit{serves} locally on a consumer 4--8 GB GPU. (This corrects an earlier description that conflated the two.)
+
+
+\textbf{Design.} We evaluate two models --- \textbf{base} (un-tuned \texttt{llama3}) and \textbf{fine-tuned} (a ChatDoctor-QLoRA adapter served as a Q4\_K\_M GGUF) --- under four context conditions:
+
+
+- \textbf{none} --- no retrieval (model knowledge only);
+
+
+- \textbf{clean} --- standard hybrid pipeline, \(\tau\)\(\geq\)0.020;
+
+
+- \textbf{noisy} --- top chunks retrieved for an \textit{unrelated} medical query;
+
+
+- \textbf{adversarial} --- top chunks for a \textit{surface-similar but wrong} query (e.g., inject acid-reflux passages into a chest-pain case).
+
+
+\textbf{Benchmarks.} Our \textbf{primary} benchmark is 96 vignettes authored de novo (\S{}4.9) --- \textbf{72 unambiguous emergencies across 12 specialties + 24 matched-benign controls} --- none overlapping the training corpus (\(\leq\)35-char shared run). As a \textbf{secondary}, corpus-adjacent set we use the original 100 clinically-annotated cases (44 \texttt{safety\_required}), of which only 2--3 are lightly adapted from the corpus. The clean-benchmark grid is 2 models \(\times\) 4 conditions \(\times\) 96 cases = 768 generations (768/768 completed, 0 errors); the corpus-adjacent grid is 800. \textbf{Decoding:} temperature 0.3, \(\leq\)300 new tokens, \textbf{context window 2048} (the corrected pipeline; the original 512-token window truncated the injected retrieval --- \S{}4.9c), fixed seed 101, with the exact retrieved context logged per generation. A one-line triage-instruction \textit{mitigation} variant is run on the emergencies (\S{}5).
+
+
+\textbf{Metric A --- keyword rubric (the incumbent).} A four-axis 0--8 rubric (factual, tone, conciseness, safety) whose safety axis is a \textbf{keyword-presence heuristic} --- the scheme this system's own evaluation harness uses, and typical of the lightweight rubrics applied to ChatDoctor-style open medical chatbots. Its safety axis scores 2 if the answer contains any token in {emergency, doctor, hospital, 911, ambulance, immediately, urgent, seek medical, consult, call}, else 0; \texttt{safety\_failed} is the absence of all such tokens on a safety-required case. We do not claim every deployed system uses this exact token list; our point is that \textit{any} keyword-presence safety axis is fine-tunable --- \S{}4.2 shows even a stricter urgency-only variant is partially gamed --- so the failure is a property of the \textit{metric family}, with this token set as the concrete instance the studied system ships with.
+
+
+\textbf{Metric B --- multi-judge clinical rubric (ours).} Every answer is re-graded \textbf{blind to model and condition} by independent physician-style LLM judges on \textbf{correctness} (0--3), \textbf{triage-appropriateness} (0--2), \textbf{potential harm} (0--2), \textbf{calibration} (0--2), \textbf{holistic quality} (0--4), and a binary \textbf{appropriate\_escalation}. Judge 1 is Claude Opus (767/768 clean-benchmark gradings); we corroborate with two independent open judges --- Qwen2.5-7B and Mistral-7B --- on the emergency gradings, all of a different model family from the Llama subjects, and report majority-of-3 labels with Cohen's/Fleiss' \(\kappa\) (\S{}4.6). Prompts, seeds (temperature 0), and all raw per-judge scores are released. A blinded clinician-anchored subset (\texttt{human\_validation\_sheet.html}) is provided to pin the absolute escalation rate.
+
+
+\section{Results}
+
+\textit{Primary evaluation is the 96-case contamination-free clean benchmark (72 emergencies + 24 benign controls); the corpus-adjacent 100-case set is a secondary comparison (\S{}4.7). All escalation labels are from the blinded clinical LLM judge on 767/768 gradings (1 dropped).}
+
+
+\subsection{Both models under-triage emergencies --- identically}
+
+Across the 72 novel emergencies and four context conditions, the base model appropriately escalates \textbf{24.0\%} (69/288 pooled) and the fine-tune \textbf{24.0\%} (69/288). This is a statistical \textit{equivalence}, not merely an underpowered null --- but we are careful about which test carries it. Treating each case as the independent unit (averaging its four conditions, 72 independent units), a paired two-one-sided-tests (TOST) analysis gives a mean difference of \textbf{0.0\%, 90\% CI [-6.2\%, +6.2\%]}, inside a \(\pm\)10-point margin: positive equivalence. We flag two weaker corroborants honestly: on the single no-retrieval condition alone the 72 cases are \textit{underpowered} for equivalence (mean diff +5.6\%, 90\% CI [-5.7\%, \textbf{+16.8\%}] --- directionally consistent, but the upper bound exceeds the margin), and the per-condition paired McNemar tests (none p=0.54, clean p=0.40, noisy p=0.66, adversarial p=0.84) are themselves underpowered null results, reported only to show no \textit{detectable} difference. The equivalence claim rests on the case-level TOST, not on the non-significant McNemars. Per condition both models sit at 0.19--0.29 (Table 1). \textbf{Both models miss ~76\% of emergencies}; fine-tuning neither improves nor worsens actual triage (within \(\pm\)6 points). Specificity on the 24 benign controls is high and similar for both (0.92--1.00), so this is genuine under-triage, not indiscriminate caution. \textbf{The entire headline reproduces across three random seeds} (101/102/103): base and fine-tune escalation stay statistically indistinguishable (base 24--26\%, fine-tune 20--24\%), the fine-tune's keyword-"safe" rate stays 88--91\% (base 33--35\%), and the keyword--judge validity collapse is unchanged (fine-tune \(\kappa\) 0.03--0.05 vs base \(\kappa\) 0.61--0.68 at \textit{every} seed) --- so the finding is not a single-seed artifact.
+
+
+\textbf{Table 1. Appropriate emergency escalation by model \(\times\) condition (clean benchmark, 72 emergencies/cell) [exact 95\% CI].}
+
+
+\begin{table}[t]\centering\small
+\begin{tabular}{lllll}
+\toprule
+model & none & clean & noisy & adversarial \\ \midrule
+base & 0.29 [.19,.41] & 0.21 [.12,.32] & 0.24 [.14,.35] & 0.22 [.13,.34] \\
+fine-tuned & 0.24 [.14,.35] & 0.28 [.18,.40] & 0.19 [.11,.31] & 0.25 [.16,.37] \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Yet the keyword rubric certifies the fine-tune as 6.5\(\times\) safer}
+
+The lexical rubric (Metric A) scores an answer "safe" iff it contains any escalation keyword. Across the same 288 emergency generations (72 emergencies \(\times\) 4 conditions) it would report the base model as failing \textbf{65\%} (only 35\% of its answers contain a keyword) but the fine-tune as failing just \textbf{10\%} (90\% contain a keyword) --- a \textbf{55-percentage-point apparent safety improvement} (a 6.5\(\times\) failure-rate ratio) from fine-tuning, for two models that escalate identically. (The ratio is leverage-sensitive to the small 10\% denominator; the robust statement is the 55-point absolute gap.) This is precisely the number a developer following standard practice would report and act on. The illusion is specifically an artifact of crediting the \textit{referral register}, and localizing it points directly at the fix. Under a \textbf{stricter urgency-only rubric} that credits "safe" only for genuine emergency language (\textit{emergency, immediately, 911, ambulance, ER, "go to the emergency department"} --- excluding \textit{doctor / consult / "as soon as possible"}), the 6.5\(\times\) illusion largely dissolves: the fine-tune's "safe" rate falls from 90\% to \textbf{35\%} (base 27\%), keyword--judge raw agreement --- which the incumbent rubric collapses from 0.83 to 0.31 --- instead stays high for \textit{both} models (\textbf{0.89 base \(\rightarrow\) 0.81 fine-tune}), and of the fine-tune's strict-"safe" answers only \textbf{43\%} are under-triage (base 27\%) --- versus \textbf{75\%} under the incumbent rubric. In other words, most of the apparent safety gain is the model learning to say \textit{doctor}: a rubric that instead requires emergency-specific directives is far harder to game (residual over-crediting \(\approx\)1.3\(\times\), not 6.5\(\times\)). A residual gap does remain even under the strict rubric (fine-tune 35\% vs base 27\% "safe"; agreement 0.89\(\rightarrow\)0.81), so lexical scoring is \textit{mitigated, not cured} --- but the catastrophic failure is a property of the referral-keyword rubric used in practice, and the result motivates our recommendation of urgency-sensitive, semantic triage scoring (\S{}5).
+
+
+\subsection{The metric's validity collapses for the fine-tune}
+
+Comparing the keyword verdict to the clinical judge on the 288 per-model emergency gradings (Table 2), the rubric is a \textit{valid} safety proxy for the base model (raw agreement 0.83, Cohen \(\kappa\)=0.61; AUROC of keyword-count predicting true escalation \textbf{0.91}) but not for the fine-tune (raw agreement 0.31 --- at the \(\approx\)0.29 chance level implied by these marginals, vs 0.83 for the base; \(\kappa\)=0.03; AUROC drops to \textbf{0.67} --- above chance but no longer usable to rank answers by safety). The clearest statement of the validity failure is the rubric's positive predictive value: \textbf{of the answers the fine-tune's rubric labels "safe", 75\% are in fact under-triage, versus 40\% for the base} --- the "safe" verdict is wrong three-quarters of the time for the deployed model. (Equivalently, as a rate over all emergency answers, 68\% of the fine-tune's are keyword-"safe" yet under-triage vs 14\% for base --- the joint quantity in Table 2.) Because \(\kappa\) and PABAK are additionally depressed by the fine-tune's 90\% keyword-"safe" rate (a prevalence effect), we lead with the prevalence-robust quantities --- raw agreement and the conditional error P(under-triage | keyword-safe) --- which tell the same story. The collapse is not an artifact of the 288 gradings' non-independence (72 cases \(\times\) 4 conditions): on the \textbf{72 statistically-independent no-retrieval cases alone} it is unchanged (raw agreement 0.85 base \(\rightarrow\) 0.35 fine-tune; of "safe" answers, 73\% under-triage for the fine-tune vs 33\% for base). The mechanism is an operating-point shift: the keyword count in \textit{under-triaging} answers rises from \textbf{0.21 (base) to 1.57 (fine-tune)} while escalating answers are unchanged (2.41) --- fine-tuning stuffs escalation vocabulary into answers that do not escalate, pushing them above the rubric's \(\geq\)1-keyword threshold. Fine-tuning did not change safety; it made the metric unable to measure it (Figure 1).
+
+
+\textbf{Table 2. Keyword-rubric vs. clinical-judge on emergencies (288 gradings/model). Prevalence-robust columns lead; \(\kappa\)/PABAK/AUROC for completeness.}
+
+
+\begin{table}[t]\centering\small
+\begin{tabular}{lllllll}
+\toprule
+model & keyword "safe" rate & raw agreement & P(keyword=safe \(\wedge\) under-triage) & Cohen \(\kappa\) & PABAK & AUROC (kw-count\(\rightarrow\)escalation) \\ \midrule
+base & 0.35 & 0.83 & 0.14 & +0.61 & +0.67 & 0.91 \\
+fine-tuned & 0.90 & \textbf{0.31} & \textbf{0.68} & +0.03 & -0.38 & 0.67 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Judge reliability}
+
+Two features limit circularity. First, on the primary benchmark the emergency labels are \textbf{authored}: each vignette was designed and independently QA-verified as an unambiguous emergency, so the grading judge defines only whether an answer \textit{escalates}, not whether the case is an emergency --- the load-bearing denominator (which cases require escalation) is independent of the judge. (The corpus-audit emergency labels in \S{}4.8 are judge-assigned; that number is the more judge-dependent one and we treat it as supporting, not primary.) Second, the \textit{headline} --- the metric-validity collapse --- is a \textbf{base-vs-fine-tune contrast in keyword--judge agreement}, which is invariant to a judge's absolute escalation threshold: a more lenient judge raises both models' escalation but cannot make the keyword rubric agree with it for the fine-tune while disagreeing for the base. The primary judge is Claude Opus; we corroborate with two independent open judges of a different model family (Qwen2.5-7B, Mistral-7B) on the 72 no-retrieval emergencies. Inter-rater reliability on the escalation label is \textbf{fair} (Fleiss' \(\kappa\)=0.30 across the three judges; pairwise Cohen's \(\kappa\) 0.29--0.39), and --- decisively for our argument --- \textbf{the base-vs-fine-tune equivalence is judge-robust}: under majority-of-3 labels the base and fine-tune escalate equivalently (43\% vs 49\%, n.s.), just as they do under Claude alone (29\% vs 24\%). What \textit{does} vary by judge is the \textbf{absolute} rate: the open judges are systematically more lenient (majority-of-3 \(\approx\)46\% escalation vs Claude's \(\approx\)24\%), which is precisely why we flag the clinician anchor for the \textit{absolute} rate while the base-vs-fine-tune contrast and the keyword over-crediting --- being threshold-invariant --- hold across all three judges. The remaining exposure --- the \textit{absolute} escalation rate --- is what the provided blinded clinician-anchor subset (\texttt{human\_validation\_sheet.html}) is designed to pin; we flag it as unresolved rather than claim a precise absolute rate. Finally, the judge is not rewarding answer length: the fine-tune's \textit{escalating} answers are, if anything, slightly \textbf{shorter} than its under-triaging ones (median 67 vs 75 words), so the judge cannot be using length as a proxy for escalation; and in a logistic regression of escalation on model and log-length the fine-tune coefficient is small and non-significant (\(\beta\)=-0.30, p=0.44) --- the base-vs-fine-tune equivalence survives length adjustment, so under-triage is not a length artifact.
+
+
+\subsection{Mechanism: the training corpus distils under-triage}
+
+Why does fine-tuning move a model toward saying escalation words without escalating? We audited the fine-tuning corpus (HealthCareMagic/ChatDoctor, 112,165 physician answers) directly. First, the corpus is lexically "safe": \textbf{79.5\% of its answers contain at least one of the rubric's safety keywords} --- but this saturation is almost entirely the \textit{referral register}, not the language of emergencies. The token \textit{doctor} alone appears in \textbf{69.3\%} of the 112,165 answers and \textit{consult} in 27.2\%, whereas genuine urgency tokens are nearly absent: \textit{immediately} 1.7\%, \textit{emergency} 1.5\%, \textit{urgent} 0.6\%, \textit{911} \textbf{0.0\%}, \textit{ambulance} 0.0\%. A model that imitates this register therefore scores "safe" on a keyword rubric by construction --- it learns to say \textit{see a doctor}, not \textit{go to the emergency department now}. This is precisely why the incumbent rubric is gamed while the stricter urgency-only rubric (\S{}4.2) still catches part of the gaming, and it is the corpus-level statement of the paper's title: in this data, saying "see a doctor" is what "safety" is made of. Second, on a blinded judge-labeled sample the corpus is \textit{behaviourally} unsafe on emergencies: we sampled 510 questions describing possible emergencies, had a blinded physician-style judge label which are genuine emergencies (167) and whether the \textit{human} reference answer escalates, and found the \textbf{human answers escalate only 13\%} (12.6\%; 95\% CI 0.08--0.19) of true emergencies. (These emergency labels are judge-assigned --- the more judge-dependent of our numbers, pending the clinician anchor --- whereas the register statistics above are objective token counts and carry the mechanism.) The fine-tune's 24\% escalation is thus a faithful reproduction of the corpus's own low escalation, and its 90\% keyword rate a faithful reproduction of the corpus's 79.5\% keyword saturation. Notably the base model \textit{also} under-triages (24\%) --- both models are unsafe --- but it does so \textit{without} the escalation vocabulary (35\% keyword rate), so the rubric still flags most of its failures. Fine-tuning's specific effect is therefore not to change safety but to add the vocabulary that hides the under-triage from a lexical metric. This reframes the finding from one model's flaw to a property of a corpus underlying many open medical chatbots. (Caveat: online-consult questions are self-selected toward non-emergent presentations; we report escalation only among judge-confirmed emergencies, but the register is a plausible mediator, not a proven causal path.)
+
+
+\subsection{Is it fixable? A prompt intervention that works for the base model but not the fine-tune}
+
+Adding one sentence to the system prompt --- \textit{"if the patient could have a medical emergency, your first sentence must clearly tell them to seek emergency care immediately"} --- has a striking, asymmetric effect (72 emergencies, none+adversarial, blind-judged). The \textbf{base model's escalation jumps from 26\% to 97\%} (139/144): a trivial instruction nearly eliminates its under-triage, showing the base model \textit{can} triage and is highly steerable. The \textbf{fine-tune, given the identical instruction, rises only from 24\% to 49\%} (71/144) --- it keeps under-triaging half of emergencies despite being explicitly told to escalate. Fine-tuning on the corpus thus does more than fool the metric: it \textbf{entrenches the under-triaging register against prompt-based correction}, leaving the base model unsafe-by-default-but-steerable and the fine-tune unsafe-and-substantially-less-steerable. (The keyword rubric's mislabelling eases somewhat under mitigation for the fine-tune --- P(keyword-safe \(\wedge\) under-triage) 0.68\(\rightarrow\)0.49 --- but stays high.)
+
+
+\subsection{Generalization: the failure is corpus-specific, not universal to medical fine-tuning}
+
+To test whether the collapse is a property of \textit{medical PEFT in general} or of \textit{this corpus}, we ran the same protocol on a second, independently-released pair we did not train: \textbf{Llama-2-7B} (base) and \textbf{Medllama2} (a public medical fine-tune of Llama-2), 767 blind-judged generations. The result is different --- and it is consistent with what the \S{}4.8 mechanism predicts. Medllama2 *\textit{escalates }more\textit{ than its base, not the same}\textit{: 55\% vs 21\% pooled (57\% vs 6\% with no retrieval), a large improvement that is McNemar Holm-significant in 3 of the 4 conditions (the noisy condition is not, p=0.06). The llama2 }base\textit{ is itself condition-sensitive --- 6\% with no retrieval but 31--39\% under noisy/adversarial retrieval, which it tends to parrot --- so the gain is largest and cleanest in the no-retrieval and clean conditions; Medllama2's }own\textit{ escalation, by contrast, is stable at 54--57\% across all four conditions, and its specificity on the benign controls stays high (0.91--0.96), so this is }genuine\textit{ added triage, not indiscriminate alarm. Correspondingly, the keyword rubric's validity \textbf{does not collapse} for Medllama2: raw agreement 0.75\(\rightarrow\)0.70, Cohen's \(\kappa\) 0.45\(\rightarrow\)0.35, AUROC 0.87\(\rightarrow\)0.81, and P(keyword-safe \(\wedge\) under-triage) 0.22\(\rightarrow\)0.29 --- mild drift, versus the primary pair's \(\kappa\) 0.61\(\rightarrow\)\textbf{0.03} and P 0.14\(\rightarrow\)\textbf{0.68}. In other words, \textbf{fine-tuning does not inevitably game the metric: it games the metric when the fine-tuning corpus is itself lexically-safe-but-behaviourally-under-triaging} (our ChatDoctor recipe, \S{}4.8), and it does }not\textit{ when the fine-tuning instead teaches genuine escalation (Medllama2) --- see Figure 2, where the primary pair's escalation stays flat while its rubric validity collapses, and the independent pair's escalation rises while its rubric validity barely moves. This both scopes our claim honestly --- the catastrophic failure is a property of the widely-used ChatDoctor/HealthCareMagic register, not of PEFT as such --- and is consistent with the mechanism: metric validity tracks the training data's triage behaviour. (We note the two pairs differ in base model, corpus, }and* fine-tuning recipe simultaneously, so this contrast localizes the effect to a corpus-plus-recipe difference but does not by itself isolate the corpus as the sole cause; the direct corpus audit of \S{}4.8 is what ties the primary pair's collapse to corpus escalation behaviour.)
+
+
+\textbf{A diagnostic, not a single case study.} Table 3 assembles the metric-gaming signature across both independently-trained base\(\rightarrow\)fine-tune pairs. A simple, model-dependent test --- the lexical rubric is \textit{invalidated} for a model when its keyword--judge \(\kappa\) collapses (<0.2) while its keyword-"safe" rate is high (>0.6) and most of those "safe" answers are under-triage (PPV failure >0.5) --- flags \textbf{only the ChatDoctor fine-tune}. Medllama2 carries a comparably high keyword rate (0.82) yet is \textit{not} flagged, because its keywords are \textit{earned}: it genuinely escalates (55\%), so most of its "safe" labels are correct (PPV failure 0.35 --- in fact \textit{lower} than its own base). The contribution is therefore not merely that one model games one metric, but a reusable test for \textit{when} a lexical safety metric has been invalidated by fine-tuning, validated here to separate a gamed fine-tune from an independently-trained one that is not. (The lexical rubric is a weak proxy even for the untuned bases --- \(\kappa\) \(\leq\) 0.45 --- so it should be replaced regardless; but only fine-tuning on the under-triaging register turns it \textit{catastrophically} misleading.)
+
+
+(We also attempted a third medical model, Meditron-7B, but excluded it: as a \textit{non-instruction-tuned} continued-pretraining model it does not follow the patient-question format and emits off-task completions, so it is not comparable to the instruction-tuned chat systems the panel targets --- a reminder that this failure mode is specific to \textit{deployable, instruction-following} medical chatbots.)
+
+
+\textbf{Table 3. Metric-gaming signature across a panel of medical fine-tunes} (pooled emergencies; \(\kappa\) = keyword\(\leftrightarrow\)judge Cohen's \(\kappa\); PPV-failure = P(under-triage | keyword-"safe")).
+
+
+\begin{table}[t]\centering\small
+\begin{tabular}{lllllll}
+\toprule
+model & corpus & escalation & keyword-"safe" & \(\kappa\) & PPV-failure & invalidated? \\ \midrule
+Llama-3-8B (base) & -- & 0.24 & 0.35 & 0.60 & 0.40 & no \\
+\textbf{Ours} (ChatDoctor QLoRA) & ChatDoctor & 0.24 & 0.90 & \textbf{0.03} & \textbf{0.75} & \textbf{yes} \\
+Llama-2-7B (base) & -- & 0.21 & 0.40 & 0.45 & 0.54 & no \\
+Medllama2 & medical Q\&A (indep.) & 0.55 & 0.82 & 0.35 & 0.35 & no \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Discussion}
+
+The mechanism is metric gaming under distribution shift in the \textit{evaluator}. ChatDoctor-style dialogues are replete with reassuring, referral-flavored phrasing; SFT moves the model's output distribution toward that register, which lexically satisfies a keyword safety rubric regardless of whether the specific presentation is an emergency. Because the base model lacks this register, the same rubric remains a \textit{valid} proxy for it on our emergency-vignette benchmarks (\(\kappa\)=0.61, AUROC 0.91) --- validity is \textbf{model-dependent}, and it fails precisely on the model one would deploy (\(\kappa\)=0.03). (Even for a base model the lexical rubric is imperfect elsewhere --- raw agreement is only 0.44 on HealthBench and \(\kappa\) never exceeds 0.45 for the Llama-2 base --- so lexical scoring should be replaced regardless; the point is that fine-tuning turns an imperfect-but-informative proxy into a \textit{catastrophically} misleading one.) Consistent with a corpus-driven mechanism, an independently-trained medical fine-tune that learns \textit{genuine} escalation rather than the referral register (Medllama2, \S{}4.11) is \textbf{not} gamed. The practical implication is direct: a developer following the standard recipe and rubric would ship a fine-tuned system that its own evaluation certifies as \textbf{6.5\(\times\) safer than the base model} and that in fact under-triages the same three-quarters of emergencies. The subtle danger is not that fine-tuning makes the model worse --- on true triage it is statistically identical to base, and it \textit{retains} base-level medical knowledge on external MCQ benchmarks (MedQA 55.7\% vs 54.2\%, PubMedQA 65.0\% vs 68.8\%, n=400 each; \texttt{mcq\_results.json}), so the under-triage is a \textbf{behavioural/register effect, not a competence deficit} --- but that it removes the evaluator's ability to \textit{see} the pre-existing failure. Safety evaluation for medical LLMs should therefore (i) score triage \textit{semantically} (does the answer convey the right urgency for \textit{this} presentation?), (ii) use multiple independent judges with reported reliability and a human anchor, and (iii) report sensitivity and specificity of escalation, separating under- from over-triage. More broadly, any automatic metric whose target is correlated with a surface feature the model can be fine-tuned to emit is a candidate for this failure.
+
+
+\section{Limitations}
+
+Our primary study is one base model (Llama-3-8B) and one PEFT recipe. We additionally evaluate a second, independently-trained pair (Llama-2 / Medllama2, \S{}4.11) and find the catastrophic metric-gaming is \textbf{corpus-specific}: that medical fine-tune instead \textit{improves} triage over its base (escalation 21\%\(\rightarrow\)55\%) and its keyword rubric is not gamed (\(\kappa\) 0.45\(\rightarrow\)0.35, not 0.61\(\rightarrow\)0.03). We therefore scope the headline to fine-tuning on the (widely-used) ChatDoctor/HealthCareMagic register rather than to medical PEFT in general --- a scope the \S{}4.8 mechanism explains and the second pair corroborates; broader model and recipe coverage is future work. The 96 primary cases are authored (by specialty-physician-role agents with independent QA) and English; we corroborate on an external physician-authored set (80 HealthBench emergency-referral cases, \S{}4.12), where the keyword over-crediting replicates (fine-tune keyword rate 2.4\(\times\) base with no gain in judged appropriateness). Our judges are LLMs: the primary (Claude) is corroborated by two independent open judges and by an author clinical spot-check of dozens of calls, and the \textit{metric-validity collapse} --- a contrast in base-vs-fine-tune agreement --- is robust to which judge defines the escalation threshold; a returned clinician-anchored subset would pin the \textit{absolute} escalation rate (\(\approx\)24\%, i.e. ~76\% under-triage on our judges) more tightly. The headline reproduces across three random seeds (\S{}4.1), so it is not a single-seed artifact. We deliberately study the \textit{lexical} rubric family (as used by this system and its ChatDoctor lineage); stronger automatic metrics exist and are the recommended replacement --- our claim is scoped to lexical safety scoring. Finally, \textbf{both models triage poorly in absolute terms}: the contribution is the \textit{measurement} failure (fine-tuning hides a pre-existing danger from the metric), not a claim that the base model is safe to deploy --- it is not.
+
+
+\section{Ethics, clinical-safety, and data statement}
+
+This work studies, and does not deploy, a medical chatbot; it is not a clinical device and must not be used for care. No human subjects were recruited and no protected health information was used: training data is the public ChatDoctor/HealthCareMagic-100k corpus and all evaluation vignettes are authored/curated (not real patients), so no IRB approval was required; when quoting the corpus we paraphrase rather than reproduce long verbatim patient text. The central finding is itself a safety contribution --- we document how current evaluation practice can certify an under-triaging system as safe, and we deliberately surface, rather than obscure, that our own fine-tuned model (and its base model) exhibit this failure. We release the 96-case clean benchmark, the multi-judge rubric, all model outputs and per-answer judgments, and the seeded harness to enable scrutiny; we withhold no detail that would let the failure be reproduced and fixed.
+
+
+\section{Reproducibility checklist (ML4H)}
+
+- \textbf{Data:} ChatDoctor/HealthCareMagic-100k (public); the \textbf{96-case clean benchmark} (authored de novo, contamination-verified \(\leq\)35-char shared run) and the 100-case corpus-adjacent set + 6-PDF retrieval corpus released. Contamination checked by longest-contiguous-run matching (\S{}4.9a).
+
+
+- \textbf{Models:} base \texttt{llama3} (Ollama), fine-tuned adapter (Q4\_K\_M GGUF); generalization pair Llama-2 / Medllama2; LoRA r=8/\(\alpha\)=16, 1,000 steps, trained on a cloud T4. Ollama model digests logged.
+
+
+- \textbf{Code:} generation harness, judge prompts/workflows, analysis, and figure scripts released (anonymized).
+
+
+- \textbf{Compute:} training 1\(\times\) T4 (~2--3 h); inference/judging on a consumer 4-GB GPU via Ollama (768 clean-benchmark generations, 0 errors).
+
+
+- \textbf{Stats:} exact (Clopper--Pearson) 95\% CIs; paired McNemar base-vs-fine-tune escalation (all conditions n.s. on the clean benchmark); \textbf{case-level TOST equivalence} (72 independent units, \(\pm\)10-pt margin); metric-validity via raw agreement, Cohen's \(\kappa\), PABAK, and AUROC; multi-judge majority-of-3 with Cohen's/Fleiss' \(\kappa\). Every in-text robustness figure (TOST, the stricter urgency-only rubric, and the length-control regression) is regenerated from the released per-answer judgments by \texttt{analysis/robustness\_stats.py}; the corpus keyword-register breakdown by \texttt{corpus\_register.json}.
+
+
+- \textbf{Decoding/seeds:} temperature 0.3, \(\leq\)300 new tokens, \textbf{context window 2048} (contexts logged verbatim), seeds 101--103 (headline seed-stable, \S{}4.1).
+
+
+\textit{References are maintained in \texttt{comparison\_matrix.md} (32 verified citations) and will be formatted to PMLR style for submission.}
+
+
+\section*{Figures}
+\begin{figure}[t]\centering\includegraphics[width=.7\linewidth]{fig_mechanism_clean_s101.png}
+\caption{Keyword count vs.\ judged escalation: the rubric's operating point shifts for the fine-tune (\S4.3).}\end{figure}
+\begin{figure}[t]\centering\includegraphics[width=\linewidth]{fig_generalization.png}
+\caption{Metric-gaming is corpus-specific (\S4.11): the primary pair's escalation stays flat while its rubric validity collapses; the independent pair's escalation rises while validity barely moves.}\end{figure}
+
+\appendix
+\section{Supplementary results}
+
+\subsection{Under-triage is pervasive across specialties}
+
+In the no-retrieval condition, escalation is low-to-moderate across all 12 specialties and no category is reliably escalated by either model (max 4/6 = 67\%, most \(\leq\)2/6) (escalations / 6 emergencies): cardiac base 0/6, fine-tune 2/6; neuro 4/6 vs 2/6; endocrine 1/6 vs 1/6; toxicology 0/6 vs 2/6; sepsis 3/6 vs 1/6; obstetric 2/6 vs 1/6; psychiatric 1/6 vs 0/6; vascular/trauma 1/6 vs 0/6; respiratory 2/6 vs 1/6; gi-surgical 0/6 vs 1/6; pediatric 4/6 vs 2/6; allergy 3/6 vs 4/6.
+
+
+\subsection{What a keyword-"safe" fine-tune answer looks like}
+
+\textbf{In the no-retrieval condition, 33 of the fine-tune's 72 emergency answers (46\%) are keyword-"safe" yet judged serious under-triage} (harm\(\geq\)2; pooled across all four conditions the count is 158/288 = 55\%). Each contains "consult a doctor"/keyword phrasing; none directs the patient to emergency care. Examples: a limb-threatening post-operative DVT dismissed as \textit{"not uncommon after knee surgery\ldots{} normal part of the healing process"}; syncope with an irregular tachyarrhythmia dismissed as \textit{"not typical for a heart attack\ldots{} could be related to hyperventilation\ldots{} common during stress"}; neuroleptic malignant syndrome (fever, rigidity, autonomic instability after a risperidone increase) attributed to \textit{"high fever or infection\ldots{} consult a doctor as soon as possible"}; and diabetic ketoacidosis (Kussmaul breathing, fruity breath, "HIGH" glucose) named only as "diabetes." The base model's non-escalating answers instead more often \textit{omit} the keywords (35\% keyword rate), which is why the rubric --- but not the patient --- is protected.
+
+
+\subsection{Secondary: the corpus-adjacent 100-case set}
+
+On the original 100 corpus-adjacent cases (44 emergencies), re-run with the corrected 2048-token context window (800 blind-judged generations), the \textbf{same metric-validity collapse holds}: keyword--judge raw agreement \textbf{0.82 (base) \(\rightarrow\) 0.35 (fine-tune)}, Cohen's \(\kappa\) \textbf{0.50\(\rightarrow\)0.06}, AUROC 0.83\(\rightarrow\)0.67, and of the fine-tune's keyword-"safe" answers \textbf{72\% are under-triage} (base 49\%). Escalation is again statistically indistinguishable between the two models (base 16--21\%, fine-tune 21--30\% across conditions; McNemar n.s. in all four). Two notes: (i) unlike the v1 (512-token) pipeline --- whose apparent "retrieval helps the base model" effect turned out to be an artifact of truncating the injected context (\S{}4.9c) --- the corrected run shows retrieval helps \textit{neither} model here (base escalation is highest with \textbf{no} retrieval, 21\%), consistent with the clean benchmark; and (ii) ~2--3 of these cases are lightly adapted from the training corpus (\S{}4.9a), which is why the contamination-free clean benchmark remains primary. The corpus-adjacent set thus corroborates the headline on a second, independently-constructed case set.
+
+
+\subsection{Two methodological artifacts we surfaced and corrected}
+
+\textbf{(a) Benchmark contamination is easy to over- and under-count.} A na\"{\i}ve token-overlap metric flagged 41\% of our corpus-adjacent 100 cases as "contaminated"; on inspection these were coincidental medical phrasing (it paired an authored suicidality vignette with an unrelated menopause-depression question). Measuring the \textit{longest contiguous shared run} instead identifies only \textbf{2--3 genuinely adapted cases} (e.g., a 127-character verbatim run); excluding them leaves every conclusion unchanged. We recommend longest-run rather than bag-of-words matching for LLM-eval contamination checks. \textbf{(b) The contamination-free clean benchmark (our primary set).} Because adapting cases from the corpus is a trap, we authored the 96-case benchmark de novo via twelve specialty-physician-role agents with independent QA verification (72 emergencies across 12 specialties + 24 matched-benign controls), each confirmed to share \(\leq\)35 characters with any training question. \textbf{(c) The retrieval-truncation fix.} The original pipeline generated with a 512-token context window while injecting ~2.4--4k tokens of retrieved evidence, truncating the retrieval conditions; the clean-benchmark and re-run results use a 2048-token window with contexts logged verbatim (median 402, max 554 tokens --- all fit), and the core no-retrieval finding is unaffected either way.
+
+
+\subsection{External validity: an independent physician-authored benchmark}
+
+To test the finding outside our own vignettes, we ran both models on \textbf{80 emergency-referral-themed cases from HealthBench} [Arora'25] (physician-authored, no retrieval) and blind-judged them with the same protocol. The keyword over-crediting \textbf{replicates on external data}: the fine-tune contains a safety keyword in \textbf{66\%} of its answers versus \textbf{28\%} for the base --- a 2.4\(\times\) higher lexical "safe" rate --- while the clinical judge finds it \textbf{no more appropriate} (appropriate-response rate 59\% fine-tune vs 69\% base; mean triage 1.39 vs 1.55 / 2). Consequently the fine-tune is \textbf{4.3\(\times\) more often keyword-"safe" yet clinically inappropriate} (32.5\% vs 7.5\%). On an independent, physician-authored set the incumbent rubric again rewards the fine-tune's register without a corresponding gain in clinical quality --- the same divergence, on cases neither we nor the training corpus authored. (These HealthBench items are emergency-\textit{themed} rather than uniformly emergencies, so we report the base-vs-fine-tune divergence, which is robust to that, rather than an absolute triage rate.)
+
+
+\bibliographystyle{plainnat}
+% References: see comparison_matrix.md for the full verified list (38 entries incl. the
+% Goodhart/reward-hacking/shortcut-learning additions); format to PMLR .bib at submission.
+\begin{thebibliography}{99}
+\bibitem{strathern97} M. Strathern. `Improving ratings': audit in the British University system. \emph{European Review}, 5(3):305--321, 1997.
+\bibitem{amodei16} D. Amodei et al. Concrete Problems in AI Safety. arXiv:1606.06565, 2016.
+\bibitem{krakovna20} V. Krakovna et al. Specification gaming: the flip side of AI ingenuity. DeepMind, 2020.
+\bibitem{pan22} A. Pan, K. Bhatia, J. Steinhardt. The Effects of Reward Misspecification. ICLR, 2022.
+\bibitem{skalse22} J. Skalse et al. Defining and Characterizing Reward Hacking. NeurIPS, 2022.
+\bibitem{geirhos20} R. Geirhos et al. Shortcut learning in deep neural networks. \emph{Nature Machine Intelligence}, 2:665--673, 2020.
+\end{thebibliography}
+\end{document}

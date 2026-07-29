@@ -1,0 +1,551 @@
+<!DOCTYPE html> 
+
+<html lang="en"> 
+
+<head> 
+
+<meta charset="UTF-8"> 
+
+<style> 
+
+* { margin: 0; padding: 0; box-sizing: border-box; } 
+
+body { font-family: Arial, Helvetica, sans-serif; background: #e8e8e8; } 
+
+.pages { padding: 24px; display: flex; flex-direction: column; gap: 24px; align-items: center; } 
+
+.page { background: #fff; width: 816px; padding: 52px 56px 48px; box-shadow: 0 2px 12px rgba(0,0,0,0.15); } 
+
+.hdr { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2.5px solid #1a4fa0; padding-bottom: 12px; margin-bottom: 12px; } 
+
+.hdr-left .co { font-size: 18px; font-weight: bold; color: #1a4fa0; } 
+
+.hdr-left .sub { font-size: 10px; color: #555; margin-top: 2px; } 
+
+.hdr-right { text-align: right; font-size: 10px; color: #555; line-height: 1.7; } 
+
+.hdr-right b { color: #1a1a1a; } 
+
+.rtitle { text-align: center; margin-bottom: 12px; } 
+
+.rtitle h1 { font-size: 13px; font-weight: bold; text-transform: uppercase; letter-spacing: .08em; color: #1a4fa0; } 
+
+.rtitle h2 { font-size: 10.5px; font-weight: normal; color: #555; margin-top: 3px; } 
+
+.iband { display: grid; grid-template-columns: repeat(4,1fr); gap: 6px; margin-bottom: 10px; } 
+
+.icell { background: #f4f7fc; border: 1px solid #ccd8ee; border-radius: 4px; padding: 7px 10px; } 
+
+.icell .lbl { font-size: 8px; text-transform: uppercase; letter-spacing: .06em; color: #777; margin-bottom: 2px; } 
+
+.icell .val { font-size: 10px; font-weight: bold; } 
+
+.stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 6px; margin-bottom: 10px; } 
+
+.sbox { border: 1px solid #ccd8ee; border-radius: 4px; padding: 8px 6px; text-align: center; } 
+
+.sbox .n { font-size: 19px; font-weight: bold; color: #1a4fa0; line-height: 1; } 
+
+.sbox .l { font-size: 8px; color: #888; text-transform: uppercase; margin-top: 2px; } 
+
+.notebox { background: #f4f7fc; border-left: 3px solid #1a4fa0; padding: 7px 10px; font-size: 9px; color: #444; line-height: 1.6; margin-bottom: 12px; } 
+
+.utitle { font-size: 8.5px; font-weight: bold; text-transform: uppercase; color: #fff; background: #1a4fa0; padding: 4px 9px; border-radius: 3px 3px 0 0; } 
+
+.utable { width: 100%; border-collapse: collapse; font-size: 9px; margin-bottom: 0; border: 1px solid #ccd8ee; border-top: none; } 
+
+.utable .uname td { background: #e8eef8; font-size: 10px; font-weight: bold; color: #1a4fa0; padding: 5px 8px; } 
+
+.utable .uname .badge { text-align: right; font-size: 9px; } 
+
+.utable thead th { background: #f4f7fc; color: #666; font-size: 8px; text-transform: uppercase; padding: 4px 8px; border-bottom: 1px solid #ccd8ee; text-align: left; } 
+
+.utable tbody tr td { padding: 3.5px 8px; border-bottom: .5px solid #e8eef0; } 
+
+.utable tbody tr:nth-child(even) td { background: #fafbfd; } 
+
+.utable .trow td { background: #e8eef8 !important; font-weight: bold; } 
+
+.utable .grow td { background: #1a4fa0 !important; color: #fff !important; font-weight: bold; } 
+
+.dbox { border: 1px solid #ccd8ee; border-top: none; border-radius: 0 0 4px 4px; background: #fffef0; padding: 8px 12px; margin-bottom: 14px; font-size: 8.5px; line-height: 1.9; color: #333; } 
+
+.dbox .dtitle { font-size: 8px; font-weight: bold; text-transform: uppercase; color: #777; letter-spacing: .05em; border-bottom: .5px solid #e0d890; padding-bottom: 3px; margin-bottom: 5px; } 
+
+.dbox .dfinal { font-weight: bold; color: #1a4fa0; font-size: 10px; margin-top: 4px; border-top: .5px solid #ccd8ee; padding-top: 4px; } 
+
+.cgrid { display: grid; grid-template-columns: repeat(4,1fr); gap: 6px; margin-bottom: 10px; } 
+
+.ccell { border: 1px solid #ccd8ee; border-radius: 4px; padding: 6px 8px; } 
+
+.ccell .lbl { font-size: 7.5px; text-transform: uppercase; color: #888; margin-bottom: 1px; } 
+
+.ccell .val { font-size: 9px; font-weight: bold; } 
+
+.nbox { border: 1px solid #ccd8ee; border-radius: 0 0 4px 4px; padding: 9px 11px; margin-bottom: 10px; } 
+
+.nbox p { font-size: 8.5px; line-height: 1.7; color: #333; margin-bottom: 3px; padding-left: 14px; text-indent: -14px; } 
+
+.sigrow { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; margin-top: 14px; } 
+
+.sigline { border-bottom: 1px solid #999; height: 40px; display: flex; align-items: flex-end; padding-bottom: 4px; margin-bottom: 3px; } 
+
+.siglabel { font-size: 8px; text-transform: uppercase; color: #666; } 
+
+.sigmeta { font-size: 8.5px; color: #555; margin-top: 2px; } 
+
+.footer { border-top: .5px solid #ccd8ee; padding-top: 6px; margin-top: 14px; display: flex; justify-content: space-between; font-size: 8px; color: #aaa; } 
+
+@media print { 
+
+  body { background: #fff; } 
+
+  .pages { padding: 0; gap: 0; } 
+
+  .page { box-shadow: none; width: 100%; padding: 0.5in 0.6in; page-break-after: always; } 
+
+  .page:last-child { page-break-after: auto; } 
+
+} 
+
+</style> 
+
+</head> 
+
+<body> 
+
+<button onclick="window.print()" style="position:fixed;top:10px;right:10px;z-index:9999;background:#1a4fa0;color:#fff;border:none;padding:12px 24px;font-size:14px;font-weight:bold;border-radius:6px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.3);">🖨 PRINT</button> 
+
+<div class="pages"> 
+
+ 
+
+<!-- PAGE 1 --> 
+
+<div class="page"> 
+
+  <div class="hdr"> 
+
+    <div class="hdr-left"> 
+
+      <div class="co">ABC Electrical Services</div> 
+
+      <div class="sub">303 E Alameda Ave, Suite A · Burbank, CA 91502</div> 
+
+      <div class="sub">Licensed Electrical Contractor · C-10</div> 
+
+    </div> 
+
+    <div class="hdr-right"> 
+
+      <b>CA License No. 1094296123</b><br> 
+
+      Prepared: April 1, 2026<br> 
+
+      Code: 2022 NEC / 2022 CEC<br> 
+
+      Method: NEC 220.82 Optional 
+
+    </div> 
+
+  </div> 
+
+  <div class="rtitle"> 
+
+    <h1>Electrical Service Load Calculation Report — Corrected Submission</h1> 
+
+    <h2>537 &amp; 539 Geneva St, Glendale, CA 91206 — Proposed ADU Development (4 Units)</h2> 
+
+  </div> 
+
+  <div class="iband"> 
+
+    <div class="icell"><div class="lbl">Jurisdiction</div><div class="val">City of Glendale, CA</div></div> 
+
+    <div class="icell"><div class="lbl">Total Units</div><div class="val">4 (2 Primary + 2 ADUs)</div></div> 
+
+    <div class="icell"><div class="lbl">Proposed Service</div><div class="val">400A / 240V 1-Phase</div></div> 
+
+    <div class="icell"><div class="lbl">Service Per Unit</div><div class="val">100A / 240V</div></div> 
+
+  </div> 
+
+  <div class="stats"> 
+
+    <div class="sbox"><div class="n">400A</div><div class="l">Total Site Service</div></div> 
+
+    <div class="sbox"><div class="n">100A</div><div class="l">Per Unit</div></div> 
+
+    <div class="sbox"><div class="n">4</div><div class="l">Revenue Meters</div></div> 
+
+    <div class="sbox"><div class="n">240V</div><div class="l">Service Voltage</div></div> 
+
+  </div> 
+
+  <div class="notebox">Calculations performed per <b>NEC 220.82 Optional Method for Dwelling Units.</b> All units have gas range/oven and gas washer/dryer. All units have electric water heater. A/C load calculated at 125% of MCA per NEC 440.32 and added outside demand factor per NEC 220.82(C). Minimum 100A service per NEC 230.79(C). All steps shown for each unit.</div> 
+
+ 
+
+  <!-- UNIT 1 --> 
+
+  <div class="utitle">Unit 1 — 537 Geneva St · Front Residence · 1,400 sq ft · 2 Bed / 1 Bath</div> 
+
+  <table class="utable"> 
+
+    <tr class="uname"><td colspan="3"><b>537 Geneva St — Primary Residence · Gas Range · Gas Washer/Dryer</b></td><td class="badge">100A Service</td></tr> 
+
+    <thead><tr><th>Load Description</th><th>Calculation</th><th>VA</th><th>NEC Reference</th></tr></thead> 
+
+    <tbody> 
+
+      <tr><td>General Lighting &amp; Receptacles</td><td>3 VA × 1,400 sf</td><td>4,200</td><td>220.82(B)(1)</td></tr> 
+
+      <tr><td>Small Appliance Circuits (2)</td><td>2 × 1,500 VA</td><td>3,000</td><td>220.82(B)(2)</td></tr> 
+
+      <tr><td>Laundry Circuit (1)</td><td>1 × 1,500 VA</td><td>1,500</td><td>220.82(B)(2)</td></tr> 
+
+      <tr class="trow"><td colspan="2"><b>Subtotal — Subject to Demand Factor</b></td><td><b>8,700</b></td><td></td></tr> 
+
+      <tr><td>Electric Water Heater</td><td>4,500 VA nameplate</td><td>4,500</td><td>220.82(B)(3) 100%</td></tr> 
+
+      <tr><td>Mini-Split A/C · 2-ton · MCA 10A</td><td>10A × 240V × 125%</td><td>3,000</td><td>220.82(C) / 440.32</td></tr> 
+
+      <tr class="grow"><td colspan="2"><b>Total Demand Load</b></td><td><b>16,200 VA</b></td><td><b>67.5A @ 240V</b></td></tr> 
+
+    </tbody> 
+
+  </table> 
+
+  <div class="dbox"> 
+
+    <div class="dtitle">NEC 220.82 Demand Factor Calculation — Step by Step</div> 
+
+    Step 1 — Subtotal = 8,700 VA — under 10,000 VA so 100% applies<br> 
+
+    Step 2 — 8,700 VA × 100% = <b>8,700 VA</b><br> 
+
+    Step 3 — Water heater at 100% nameplate: 4,500 VA<br> 
+
+    Step 4 — A/C per NEC 220.82(C): 10A × 240V = 2,400 VA × 125% = 3,000 VA<br> 
+
+    <div class="dfinal">Total = 8,700 + 4,500 + 3,000 = 16,200 VA ÷ 240V = 67.5A ✅ 100A Service — 32.5A Headroom</div> 
+
+  </div> 
+
+ 
+
+  <!-- UNIT 2 --> 
+
+  <div class="utitle">Unit 2 — 539 Geneva St · Front Residence · 1,200 sq ft · 1 Bed / 1 Bath</div> 
+
+  <table class="utable"> 
+
+    <tr class="uname"><td colspan="3"><b>539 Geneva St — Primary Residence · Gas Range · Gas Washer/Dryer</b></td><td class="badge">100A Service</td></tr> 
+
+    <thead><tr><th>Load Description</th><th>Calculation</th><th>VA</th><th>NEC Reference</th></tr></thead> 
+
+    <tbody> 
+
+      <tr><td>General Lighting &amp; Receptacles</td><td>3 VA × 1,200 sf</td><td>3,600</td><td>220.82(B)(1)</td></tr> 
+
+      <tr><td>Small Appliance Circuits (2)</td><td>2 × 1,500 VA</td><td>3,000</td><td>220.82(B)(2)</td></tr> 
+
+      <tr><td>Laundry Circuit (1)</td><td>1 × 1,500 VA</td><td>1,500</td><td>220.82(B)(2)</td></tr> 
+
+      <tr class="trow"><td colspan="2"><b>Subtotal — Subject to Demand Factor</b></td><td><b>8,100</b></td><td></td></tr> 
+
+      <tr><td>Electric Water Heater</td><td>4,500 VA nameplate</td><td>4,500</td><td>220.82(B)(3) 100%</td></tr> 
+
+      <tr><td>Mini-Split A/C · 1.5-ton · MCA 7.7A</td><td>7.7A × 240V × 125%</td><td>2,310</td><td>220.82(C) / 440.32</td></tr> 
+
+      <tr class="grow"><td colspan="2"><b>Total Demand Load</b></td><td><b>14,910 VA</b></td><td><b>62.1A @ 240V</b></td></tr> 
+
+    </tbody> 
+
+  </table> 
+
+  <div class="dbox"> 
+
+    <div class="dtitle">NEC 220.82 Demand Factor Calculation — Step by Step</div> 
+
+    Step 1 — Subtotal = 8,100 VA — under 10,000 VA so 100% applies<br> 
+
+    Step 2 — 8,100 VA × 100% = <b>8,100 VA</b><br> 
+
+    Step 3 — Water heater at 100% nameplate: 4,500 VA<br> 
+
+    Step 4 — A/C per NEC 220.82(C): 7.7A × 240V = 1,848 VA × 125% = 2,310 VA<br> 
+
+    <div class="dfinal">Total = 8,100 + 4,500 + 2,310 = 14,910 VA ÷ 240V = 62.1A ✅ 100A Service — 37.9A Headroom</div> 
+
+  </div> 
+
+ 
+
+  <div class="footer"> 
+
+    <span>ABC Electrical Services · CA Lic. No. 1094296123 · 303 E Alameda Ave Suite A, Burbank CA 91502</span> 
+
+    <span>Page 1 of 2</span> 
+
+  </div> 
+
+</div> 
+
+ 
+
+<!-- PAGE 2 --> 
+
+<div class="page"> 
+
+  <div class="hdr"> 
+
+    <div class="hdr-left"> 
+
+      <div class="co">ABC Electrical Services</div> 
+
+      <div class="sub">303 E Alameda Ave, Suite A · Burbank, CA 91502 · CA Lic. No. 1094296123</div> 
+
+    </div> 
+
+    <div class="hdr-right"> 
+
+      537 &amp; 539 Geneva St, Glendale, CA 91206<br> 
+
+      Load Calculation Report — Page 2 of 2<br> 
+
+      April 1, 2026 
+
+    </div> 
+
+  </div> 
+
+ 
+
+  <!-- UNIT 3 --> 
+
+  <div class="utitle">Unit 3 — 537A Geneva St · ADU · 1,000 sq ft · 3 Bed / 2 Bath</div> 
+
+  <table class="utable"> 
+
+    <tr class="uname"><td colspan="3"><b>537A Geneva St — Accessory Dwelling Unit · Gas Range · Gas Washer/Dryer</b></td><td class="badge">100A Service</td></tr> 
+
+    <thead><tr><th>Load Description</th><th>Calculation</th><th>VA</th><th>NEC Reference</th></tr></thead> 
+
+    <tbody> 
+
+      <tr><td>General Lighting &amp; Receptacles</td><td>3 VA × 1,000 sf</td><td>3,000</td><td>220.82(B)(1)</td></tr> 
+
+      <tr><td>Small Appliance Circuits (2)</td><td>2 × 1,500 VA</td><td>3,000</td><td>220.82(B)(2)</td></tr> 
+
+      <tr><td>Laundry Circuit (1)</td><td>1 × 1,500 VA</td><td>1,500</td><td>220.82(B)(2)</td></tr> 
+
+      <tr class="trow"><td colspan="2"><b>Subtotal — Subject to Demand Factor</b></td><td><b>7,500</b></td><td></td></tr> 
+
+      <tr><td>Electric Water Heater</td><td>4,500 VA nameplate</td><td>4,500</td><td>220.82(B)(3) 100%</td></tr> 
+
+      <tr><td>Ducted A/C — Midea NOD30-36HFN10-M2 · 3-ton · MCA 17.2A</td><td>17.2A × 240V × 125%</td><td>5,160</td><td>220.82(C) / 440.32</td></tr> 
+
+      <tr><td>Indoor Air Handler — Midea NT1-36HWFN10-M2-D</td><td>Low voltage control only</td><td>0</td><td>No electrical load</td></tr> 
+
+      <tr class="grow"><td colspan="2"><b>Total Demand Load</b></td><td><b>17,160 VA</b></td><td><b>71.5A @ 240V</b></td></tr> 
+
+    </tbody> 
+
+  </table> 
+
+  <div class="dbox"> 
+
+    <div class="dtitle">NEC 220.82 Demand Factor Calculation — Step by Step</div> 
+
+    Step 1 — Subtotal = 7,500 VA — under 10,000 VA so 100% applies<br> 
+
+    Step 2 — 7,500 VA × 100% = <b>7,500 VA</b><br> 
+
+    Step 3 — Water heater at 100% nameplate: 4,500 VA<br> 
+
+    Step 4 — Condenser per NEC 220.82(C): Midea NOD30-36HFN10-M2 MCA 17.2A × 240V = 4,128 VA × 125% = 5,160 VA<br> 
+
+    Step 5 — Air handler NT1-36HWFN10-M2-D: low voltage control only — no electrical load<br> 
+
+    Step 6 — Dedicated circuit: 17.2A × 125% = 21.5A → 25A breaker / 10 AWG copper<br> 
+
+    <div class="dfinal">Total = 7,500 + 4,500 + 5,160 = 17,160 VA ÷ 240V = 71.5A ✅ 100A Service — 28.5A Headroom</div> 
+
+  </div> 
+
+ 
+
+  <!-- UNIT 4 --> 
+
+  <div class="utitle">Unit 4 — 539B Geneva St · ADU · 1,000 sq ft · 3 Bed / 2 Bath</div> 
+
+  <table class="utable"> 
+
+    <tr class="uname"><td colspan="3"><b>539B Geneva St — Accessory Dwelling Unit · Gas Range · Gas Washer/Dryer</b></td><td class="badge">100A Service</td></tr> 
+
+    <thead><tr><th>Load Description</th><th>Calculation</th><th>VA</th><th>NEC Reference</th></tr></thead> 
+
+    <tbody> 
+
+      <tr><td>General Lighting &amp; Receptacles</td><td>3 VA × 1,000 sf</td><td>3,000</td><td>220.82(B)(1)</td></tr> 
+
+      <tr><td>Small Appliance Circuits (2)</td><td>2 × 1,500 VA</td><td>3,000</td><td>220.82(B)(2)</td></tr> 
+
+      <tr><td>Laundry Circuit (1)</td><td>1 × 1,500 VA</td><td>1,500</td><td>220.82(B)(2)</td></tr> 
+
+      <tr class="trow"><td colspan="2"><b>Subtotal — Subject to Demand Factor</b></td><td><b>7,500</b></td><td></td></tr> 
+
+      <tr><td>Electric Water Heater</td><td>4,500 VA nameplate</td><td>4,500</td><td>220.82(B)(3) 100%</td></tr> 
+
+      <tr><td>Ducted A/C — Midea NOD30-36HFN10-M2 · 3-ton · MCA 17.2A</td><td>17.2A × 240V × 125%</td><td>5,160</td><td>220.82(C) / 440.32</td></tr> 
+
+      <tr><td>Indoor Air Handler — Midea NT1-36HWFN10-M2-D</td><td>Low voltage control only</td><td>0</td><td>No electrical load</td></tr> 
+
+      <tr class="grow"><td colspan="2"><b>Total Demand Load</b></td><td><b>17,160 VA</b></td><td><b>71.5A @ 240V</b></td></tr> 
+
+    </tbody> 
+
+  </table> 
+
+  <div class="dbox"> 
+
+    <div class="dtitle">NEC 220.82 Demand Factor Calculation — Step by Step</div> 
+
+    Step 1 — Subtotal = 7,500 VA — under 10,000 VA so 100% applies<br> 
+
+    Step 2 — 7,500 VA × 100% = <b>7,500 VA</b><br> 
+
+    Step 3 — Water heater at 100% nameplate: 4,500 VA<br> 
+
+    Step 4 — Condenser per NEC 220.82(C): Midea NOD30-36HFN10-M2 MCA 17.2A × 240V = 4,128 VA × 125% = 5,160 VA<br> 
+
+    Step 5 — Air handler NT1-36HWFN10-M2-D: low voltage control only — no electrical load<br> 
+
+    Step 6 — Dedicated circuit: 17.2A × 125% = 21.5A → 25A breaker / 10 AWG copper<br> 
+
+    <div class="dfinal">Total = 7,500 + 4,500 + 5,160 = 17,160 VA ÷ 240V = 71.5A ✅ 100A Service — 28.5A Headroom</div> 
+
+  </div> 
+
+ 
+
+  <!-- SUMMARY --> 
+
+  <div class="utitle">Total Site Service Summary</div> 
+
+  <table class="utable" style="margin-bottom:12px;"> 
+
+    <thead><tr><th>Unit</th><th>Address</th><th>Description</th><th>Demand Load</th><th>Demand Amps</th><th>Service</th></tr></thead> 
+
+    <tbody> 
+
+      <tr><td>Unit 1</td><td>537 Geneva St</td><td>Front — 1,400 sf · 2 Bd/1 Ba · 2-ton A/C</td><td>16,200 VA</td><td>67.5A</td><td>100A</td></tr> 
+
+      <tr><td>Unit 2</td><td>539 Geneva St</td><td>Front — 1,200 sf · 1 Bd/1 Ba · 1.5-ton A/C</td><td>14,910 VA</td><td>62.1A</td><td>100A</td></tr> 
+
+      <tr><td>Unit 3</td><td>537A Geneva St</td><td>ADU — 1,000 sf · 3 Bd/2 Ba · Midea 3-ton</td><td>17,160 VA</td><td>71.5A</td><td>100A</td></tr> 
+
+      <tr><td>Unit 4</td><td>539B Geneva St</td><td>ADU — 1,000 sf · 3 Bd/2 Ba · Midea 3-ton</td><td>17,160 VA</td><td>71.5A</td><td>100A</td></tr> 
+
+      <tr class="grow"><td colspan="3"><b>Total Site Service</b></td><td><b>65,430 VA</b></td><td><b>272.6A</b></td><td><b>400A</b></td></tr> 
+
+    </tbody> 
+
+  </table> 
+
+ 
+
+  <!-- CODES --> 
+
+  <div class="utitle" style="margin-bottom:8px;">Applicable Codes &amp; Standards</div> 
+
+  <div class="cgrid" style="margin-bottom:10px;"> 
+
+    <div class="ccell"><div class="lbl">Load Calculation</div><div class="val">NEC 220.82 Optional</div></div> 
+
+    <div class="ccell"><div class="lbl">A/C Sizing</div><div class="val">NEC 440.32 (125% MCA)</div></div> 
+
+    <div class="ccell"><div class="lbl">Min. Service Size</div><div class="val">NEC 230.79(C) 100A</div></div> 
+
+    <div class="ccell"><div class="lbl">Conductor Sizing</div><div class="val">NEC Table 310.12</div></div> 
+
+    <div class="ccell"><div class="lbl">ADU Requirements</div><div class="val">CA H&amp;S Code §65852.2</div></div> 
+
+    <div class="ccell"><div class="lbl">Local Authority</div><div class="val">Glendale Building &amp; Safety</div></div> 
+
+    <div class="ccell"><div class="lbl">Service Equipment</div><div class="val">NEC Article 230</div></div> 
+
+    <div class="ccell"><div class="lbl">Grounding</div><div class="val">NEC Article 250</div></div> 
+
+  </div> 
+
+ 
+
+  <!-- NOTES --> 
+
+  <div class="utitle">Engineer's Notes</div> 
+
+  <div class="nbox"> 
+
+    <p>1. All load calculations performed using NEC 220.82 Optional Method. General lighting, small appliance, and laundry loads subject to demand factors. All units below 10,000 VA subtotal therefore 100% demand factor applies.</p> 
+
+    <p>2. Fixed appliances (water heater) added at 100% nameplate per NEC 220.82(B)(3). All units have gas range/oven and gas washer/dryer — no electric cooking or laundry loads included.</p> 
+
+    <p>3. A/C load excluded from demand factor and added separately at 125% of MCA per NEC 220.82(C) and NEC 440.32. ADU units use Midea ducted inverter heat pump (condenser: NOD30-36HFN10-M2 / air handler: NT1-36HWFN10-M2-D). Indoor air handler is low voltage control only — no electrical load.</p> 
+
+    <p>4. Minimum 100A service assigned per NEC 230.79(C) regardless of calculated demand.</p> 
+
+    <p>5. Individual 100A main breaker panels to be installed in each unit per NEC 230.71. Four revenue meters in common metering center — coordinate with SCE prior to rough-in.</p> 
+
+    <p>6. All work to be performed by licensed California C-10 Electrical Contractor and inspected by City of Glendale Building &amp; Safety Division prior to energization.</p> 
+
+  </div> 
+
+ 
+
+  <!-- SIGNATURE --> 
+
+  <div class="sigrow"> 
+
+    <div> 
+
+      <div class="sigline"><span style="font-family:Georgia,serif;font-style:italic;font-size:15px;color:#1a1a1a;">Artin Tahmasian</span></div> 
+
+      <div class="siglabel">Prepared by — ABC Electrical Services</div> 
+
+      <div class="sigmeta">CA Contractor License No. 1094296123 · C-10</div> 
+
+      <div class="sigmeta">303 E Alameda Ave, Suite A · Burbank, CA 91502</div> 
+
+    </div> 
+
+    <div> 
+
+      <div class="sigline"><span style="font-size:12px;color:#1a1a1a;">April 1, 2026</span></div> 
+
+      <div class="siglabel">Date</div> 
+
+    </div> 
+
+  </div> 
+
+ 
+
+  <div class="footer"> 
+
+    <span>ABC Electrical Services · CA Lic. No. 1094296123 · 303 E Alameda Ave Suite A, Burbank CA 91502</span> 
+
+    <span>537 &amp; 539 Geneva St, Glendale CA 91206 · 2022 NEC / CEC Compliant · Page 2 of 2</span> 
+
+  </div> 
+
+</div> 
+
+ 
+
+</div> 
+
+</body> 
+
+</html> 
