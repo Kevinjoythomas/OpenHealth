@@ -87,3 +87,6 @@ services/*/app/instance/
 lint/github_token.txt.txt
 lint/send.zip
 research_upgrade/results_v2/healthbench_raw.jsonl
+
+# unrelated local files, never commit
+lint/
