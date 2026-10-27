@@ -152,7 +152,7 @@
 <!-- END: Main Chat Area -->
 
 <script>
-const API = 'https://nonsignificantly-untippled-mikaela.ngrok-free.dev';
+const API = (window.OPENHEALTH_API || 'http://localhost:5000');
 const H = { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' };
 let sessionId = null;
 let token = localStorage.getItem('access_token');

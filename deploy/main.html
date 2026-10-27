@@ -143,7 +143,6 @@
 <span class="text-xl font-bold tracking-tighter text-emerald-900 dark:text-emerald-50">OpenHealth</span>
 <div class="hidden md:flex items-center gap-6">
 <a class="text-emerald-700 dark:text-emerald-300 font-semibold border-b-2 border-emerald-500 pb-1" href="#">Home</a>
-<a class="text-slate-600 dark:text-slate-400 hover:text-emerald-600 transition-colors" href="#results">Results</a>
 <a class="text-slate-600 dark:text-slate-400 hover:text-emerald-600 transition-colors" href="#architecture">Architecture</a>
 <a class="text-slate-600 dark:text-slate-400 hover:text-emerald-600 transition-colors" href="https://github.com/Kevinjoythomas/OpenHealth" target="_blank">GitHub</a>
 </div>
@@ -166,7 +165,7 @@
                     AI-powered medical guidance, grounded in <span class="text-primary">real clinical data</span>
 </h1>
 <p class="hero-3 text-lg text-on-surface-variant max-w-2xl leading-relaxed">
-                    Llama 3 8B LoRA-adapted on 112K real patient-doctor consultations, served through a hybrid BM25 + vector RAG pipeline. Evaluated across 8 clinical test cases — achieving 7.25/8 rubric score and +94.3% ROUGE-2 improvement.
+                    Llama 3 8B adapted with QLoRA on ChatDoctor/HealthCareMagic patient-doctor consultations, served through a hybrid BM25 + vector RAG pipeline.
                 </p>
 <div class="hero-4 flex flex-wrap gap-4">
 <a href="ChatBot.html" class="clinical-gradient text-on-primary px-8 py-4 rounded-lg font-bold shadow-lg hover:brightness-110 transition-all">
@@ -186,85 +185,6 @@
 </div>
 </section>
 <!-- Stat Mosaic Section -->
-<section id="results" class="py-24 px-6 bg-surface-container-low">
-<div class="max-w-7xl mx-auto">
-<div class="mb-16 text-center max-w-3xl mx-auto reveal">
-<h2 class="text-4xl font-bold tracking-tight text-on-surface leading-tight mb-4">
-                    Medical AI with measurable <span class="font-serif italic text-primary">quality</span>, <span class="font-serif italic text-primary">safety</span>, and system design — all in one platform
-                </h2>
-<p class="text-on-surface-variant">
-                    Evaluated end-to-end across rubric scoring, ROUGE-N metrics, and retrieval latency. Every number below is from our actual benchmark runs.
-                </p>
-</div>
-<div class="grid grid-cols-1 md:grid-cols-12 gap-6 auto-rows-[240px]">
-<!-- Card 1: Clinical Training Scale -->
-<div class="md:col-span-5 mosaic-card reveal bg-surface-container-lowest p-8 rounded-2xl border border-outline-variant/30 flex flex-col justify-between overflow-hidden relative group">
-<div class="relative z-10">
-<span class="text-primary font-bold text-sm tracking-wider uppercase mb-2 block">Llama 3 8B + LoRA (Unsloth)</span>
-<h3 class="text-2xl font-bold text-on-surface mb-2">Clinical Training Scale</h3>
-<p class="text-on-surface-variant text-sm leading-relaxed max-w-[280px]">112K real patient-doctor consultations (ChatDoctor-HealthCareMagic-100k) used to LoRA adapt the model. rank=8, alpha=16, 20.97M trainable params.</p>
-</div>
-<div class="absolute bottom-[-10%] right-[-5%] w-1/2 h-2/3 opacity-20 group-hover:opacity-40 transition-opacity">
-<span class="material-symbols-outlined text-[120px] text-primary" style="font-variation-settings: 'FILL' 1;">medical_services</span>
-</div>
-</div>
-<!-- Card 2: Retrieval Quality -->
-<div class="md:col-span-4 mosaic-card reveal reveal-delay-1 bg-primary-container/30 p-8 rounded-2xl border border-primary/10 flex flex-col justify-between overflow-hidden relative">
-<div>
-<span class="text-on-primary-container font-bold text-sm tracking-wider uppercase mb-2 block">2 retrieval strategies</span>
-<h3 class="text-2xl font-bold text-on-primary-container mb-2">Hybrid RAG Retrieval</h3>
-<p class="text-on-primary-container/80 text-sm leading-relaxed">BM25 keyword + ChromaDB vector search run concurrently. Fused via RRF. Relevance threshold (≥ 0.020) filters out low-confidence sources.</p>
-</div>
-<div class="mt-4 flex gap-1">
-<div class="h-1 flex-1 bg-primary rounded-full"></div>
-<div class="h-1 flex-1 bg-primary rounded-full"></div>
-<div class="h-1 flex-1 bg-primary/20 rounded-full"></div>
-</div>
-</div>
-<!-- Card 3: Backend Architecture -->
-<div class="md:col-span-3 mosaic-card reveal reveal-delay-2 bg-secondary-container/20 p-8 rounded-2xl border border-secondary/10 flex flex-col justify-between relative">
-<div>
-<span class="text-secondary font-bold text-sm tracking-wider uppercase mb-2 block">API Gateway + 3 services</span>
-<h3 class="text-xl font-bold text-on-surface mb-2 leading-tight">Backend Architecture</h3>
-<p class="text-on-surface-variant text-xs leading-relaxed">Auth, Chat Orchestrator, Retrieval, and API Gateway — all independently deployable Flask services.</p>
-</div>
-<span class="material-symbols-outlined text-4xl text-secondary">hub</span>
-</div>
-<!-- Card 4: Safety Improvement -->
-<div class="md:col-span-3 mosaic-card reveal reveal-delay-1 bg-on-surface p-8 rounded-2xl flex flex-col justify-between text-surface relative">
-<div>
-<span class="text-primary-fixed-dim font-bold text-sm tracking-wider uppercase mb-2 block">8-point rubric</span>
-<h3 class="text-xl font-bold mb-2 leading-tight">Safety Improvement</h3>
-<p class="text-surface-variant text-xs leading-relaxed">Full RAG pipeline correctly escalated all 4 emergency test cases the base model failed.</p>
-</div>
-<span class="material-symbols-outlined text-4xl text-primary-fixed-dim" style="font-variation-settings: 'FILL' 1;">verified_user</span>
-</div>
-<!-- Card 5: Evaluation Gains -->
-<div class="md:col-span-5 mosaic-card reveal reveal-delay-2 clinical-gradient p-8 rounded-2xl text-on-primary flex flex-col justify-between overflow-hidden relative group">
-<div>
-<span class="text-white/80 font-bold text-sm tracking-wider uppercase mb-2 block">+26.7% ROUGE-1 on unseen data</span>
-<h3 class="text-3xl font-bold mb-3">Evaluation Gains</h3>
-<p class="text-white/90 text-sm leading-relaxed max-w-md">7.25/8 with full RAG pipeline vs 6.12/8 base model. ROUGE-2 improved +94.3% on 50 unseen clinical consultation samples.</p>
-</div>
-<div class="absolute right-8 bottom-8 flex items-baseline gap-2">
-<span class="text-5xl font-black" data-counter data-target="7.25" data-decimals="2">7.25</span>
-<span class="text-xl opacity-60">/ 8.0</span>
-</div>
-</div>
-<!-- Card 6: Real-time Product -->
-<div class="md:col-span-4 mosaic-card reveal reveal-delay-3 bg-surface-container-highest p-8 rounded-2xl border border-outline-variant/30 flex flex-col justify-between relative group">
-<div>
-<span class="text-on-surface-variant font-bold text-sm tracking-wider uppercase mb-2 block">Frontend on Vercel</span>
-<h3 class="text-2xl font-bold text-on-surface mb-2">Live Deployment</h3>
-<p class="text-on-surface-variant text-sm leading-relaxed">Static frontend deployed on Vercel. Backend served via ngrok tunnel with JWT-secured API gateway.</p>
-</div>
-<div class="absolute bottom-0 right-8 transform translate-y-2 group-hover:translate-y-0 transition-transform">
-<span class="material-symbols-outlined text-5xl text-primary/40">devices</span>
-</div>
-</div>
-</div>
-</div>
-</section>
 <!-- Trust Bar -->
 <section class="bg-surface-container-low py-12">
 <div class="max-w-7xl mx-auto px-6">
@@ -356,106 +276,7 @@
 </div>
 </section>
 <!-- Performance / Metrics -->
-<section class="py-24 px-6">
-<div class="max-w-7xl mx-auto">
-<div class="flex flex-col lg:flex-row gap-16 items-center">
-<div class="flex-1 reveal">
-<h2 class="text-4xl font-bold tracking-tight mb-6">Model Benchmarking</h2>
-<p class="text-on-surface-variant mb-8 leading-relaxed">
-                        Evaluated across 8 real clinical test cases using a 4-axis rubric (factual, tone, conciseness, safety) and ROUGE-N on 50-sample memorisation + generalisation splits.
-                    </p>
-<div class="bg-primary-container/20 p-8 rounded-xl border-l-4 border-primary">
-<span class="text-6xl font-black text-primary" data-counter data-target="94.3" data-decimals="1" data-prefix="+" data-suffix="%">+94.3%</span>
-<p class="text-on-primary-container font-bold mt-2">ROUGE-2 Score Gain</p>
-<p class="text-sm text-on-surface-variant mt-1">Fine-tuned vs base Llama 3 on 50 unseen clinical consultation samples (generalisation split).</p>
-</div>
-</div>
-<div class="flex-1 w-full overflow-hidden rounded-xl border border-outline-variant/20 shadow-sm reveal reveal-delay-1">
-<table class="w-full text-left bg-white">
-<thead class="bg-surface-container">
-<tr>
-<th class="px-6 py-4 font-bold text-sm">Model Configuration</th>
-<th class="px-6 py-4 font-bold text-sm">Rubric Score</th>
-<th class="px-6 py-4 font-bold text-sm">ROUGE-1 (Unseen)</th>
-</tr>
-</thead>
-<tbody class="divide-y divide-outline-variant/10">
-<tr>
-<td class="px-6 py-4 text-sm font-medium">Base Llama 3 8B</td>
-<td class="px-6 py-4 text-sm text-on-surface-variant">6.12 / 8</td>
-<td class="px-6 py-4 text-sm text-on-surface-variant">0.258</td>
-</tr>
-<tr>
-<td class="px-6 py-4 text-sm font-medium">Fine-tuned Only</td>
-<td class="px-6 py-4 text-sm text-on-surface-variant">6.75 / 8</td>
-<td class="px-6 py-4 text-sm text-on-surface-variant">0.327</td>
-</tr>
-<tr class="bg-surface-container-low">
-<td class="px-6 py-4 text-sm font-bold text-primary">Fine-tuned + Hybrid RAG</td>
-<td class="px-6 py-4 text-sm font-bold text-primary">7.25 / 8</td>
-<td class="px-6 py-4 text-sm font-bold text-primary">0.327 + safety ✓</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
-</div>
-</section>
 <!-- Safety & Reliability -->
-<section class="py-24 bg-on-surface text-surface">
-<div class="max-w-7xl mx-auto px-6">
-<div class="grid grid-cols-1 md:grid-cols-2 gap-20">
-<div class="reveal">
-<h2 class="text-3xl font-bold mb-6">Safety Framework</h2>
-<ul class="space-y-6">
-<li class="flex gap-4">
-<span class="material-symbols-outlined text-primary-fixed">verified_user</span>
-<div>
-<h4 class="font-bold text-lg">Emergency Escalation Scoring</h4>
-<p class="text-surface-variant opacity-80 text-sm">Rubric axis dedicated to safety referrals. Full pipeline scored 2/2 on all 4 safety-required test cases — chest pain, suspected TIAs, polypharmacy, and complex diabetes.</p>
-</div>
-</li>
-<li class="flex gap-4">
-<span class="material-symbols-outlined text-primary-fixed">history_edu</span>
-<div>
-<h4 class="font-bold text-lg">Grounded Source Citation</h4>
-<p class="text-surface-variant opacity-80 text-sm">Sources are only cited when RRF score ≥ 0.020, meaning both BM25 and vector search agreed on the document. Low-confidence retrieval falls back to model training knowledge.</p>
-</div>
-</li>
-<li class="flex gap-4">
-<span class="material-symbols-outlined text-primary-fixed">health_and_safety</span>
-<div>
-<h4 class="font-bold text-lg">Relevance Threshold Filtering</h4>
-<p class="text-surface-variant opacity-80 text-sm">Prevents hallucinated citations. When the corpus lacks coverage, the model answers from fine-tuning rather than injecting irrelevant PDF chunks.</p>
-</div>
-</li>
-</ul>
-</div>
-<div class="reveal reveal-delay-1 bg-surface/5 p-8 rounded-xl border border-surface/10 backdrop-blur-sm">
-<h4 class="text-primary-fixed font-bold mb-4 flex items-center gap-2">
-<span class="material-symbols-outlined">analytics</span>
-                        Evaluation Summary
-                    </h4>
-<div class="space-y-4">
-<div class="flex justify-between text-sm">
-<span>Emergency Cases Correctly Escalated</span>
-<span class="text-primary-fixed">4 / 4</span>
-</div>
-<div class="w-full bg-surface/10 h-1.5 rounded-full overflow-hidden">
-<div class="bar-fill bg-primary h-full" style="--w: 100%"></div>
-</div>
-<div class="flex justify-between text-sm">
-<span>Full Pipeline Rubric Score</span>
-<span class="text-primary-fixed">7.25 / 8</span>
-</div>
-<div class="w-full bg-surface/10 h-1.5 rounded-full overflow-hidden">
-<div class="bar-fill bg-primary h-full" style="--w: 91%"></div>
-</div>
-</div>
-</div>
-</div>
-</div>
-</section>
 <!-- Architecture Diagram Area -->
 <section id="architecture" class="py-24 px-6 bg-surface-container-low">
 <div class="max-w-7xl mx-auto">

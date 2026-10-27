@@ -130,7 +130,7 @@ New consultation
 <script>
 const API = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? 'http://localhost:5000'
-    : 'https://nonsignificantly-untippled-mikaela.ngrok-free.dev';
+    : (window.OPENHEALTH_API || 'http://localhost:5000');
 const H = { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' };
 let sessionId = null;
 let token = localStorage.getItem('access_token');

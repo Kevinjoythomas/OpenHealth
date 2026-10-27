@@ -118,7 +118,7 @@ body::before{content:'';position:fixed;top:-200px;left:50%;transform:translateX(
 </div>
 
 <script>
-const API = 'https://nonsignificantly-untippled-mikaela.ngrok-free.dev';
+const API = (window.OPENHEALTH_API || 'http://localhost:5000');
 const HDR = { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' };
 
 function saveTokens(data) {

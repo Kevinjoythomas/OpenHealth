@@ -1,237 +1,129 @@
 # OpenHealth
 
-An end-to-end medical AI platform: LoRA fine-tuned Llama 3 8B served through a hybrid RAG pipeline, wrapped in a microservices architecture with a web frontend.
+A medical question-answering platform that serves a QLoRA-fine-tuned Llama 3 8B model through hybrid retrieval over clinical reference PDFs, built as Flask microservices with a web chat frontend.
 
-> Live demo: [openhealth-two.vercel.app](https://openhealth-two.vercel.app) · Backend via ngrok
->
-> The previous monolith lives in `website/` for reference. The active backend codebase is in `services/`.
+![OpenHealth chat interface](website/static/repo_images/chatbot.png)
 
----
+## Overview
 
-## Results
+General-purpose chat models give generic medical answers and cannot point to a source. OpenHealth fine-tunes Llama 3 8B Instruct on patient and doctor conversations so it answers in a short consultation style, then grounds each answer in reference PDFs that you supply and cites the file and page it used. Retrieval combines keyword search (BM25) with dense vector search, fuses the two rankings with reciprocal rank fusion (RRF), and drops weak matches, so the model falls back to its own training when no document fits. The backend is split into five services (gateway, auth, chat orchestration, retrieval, ingestion) and runs locally with Docker Compose and Ollama. It started as a college project at MVSR Engineering College, Hyderabad; the original single-file Flask app is kept in `website/`.
 
-### Model Quality (8 Clinical Test Cases)
+## Highlights
 
-| Condition | Avg Score | Description |
-|---|---|---|
-| Base Llama 3 8B | 6.12 / 8 | No fine-tuning, no RAG |
-| Fine-tuned (no RAG) | 6.75 / 8 | LoRA adapter only |
-| Fine-tuned + RAG | **7.25 / 8** | Full pipeline |
-
-Rubric: factual accuracy (2), tone (2), conciseness (2), safety referral (2).
-
-The full pipeline improved every failed safety escalation case. The base model consistently failed to refer emergency cases (chest pain + cardiac history, suspected TIAs, polypharmacy exhaustion).
-
-### ROUGE Evaluation (N=50 per condition)
-
-| Split | Base R1 | Fine-tuned R1 | Δ |
-|---|---|---|---|
-| Memorisation (seen) | 0.2517 | 0.3122 | +24.0% |
-| Generalisation (unseen) | 0.2582 | 0.3271 | **+26.7%** |
-
-ROUGE-2 improvement on unseen data: **+94.3%**. The generalisation gain matching the memorisation gain shows the model learned medical communication patterns, not just memorised answers.
-
-### Retrieval Latency (4 queries, 5 runs each)
-
-| Strategy | Avg Latency |
-|---|---|
-| BM25 only | 2,058 ms |
-| Vector only | 2,161 ms |
-| Hybrid (concurrent) | 2,155 ms |
-
-Hybrid runs both strategies in parallel — total latency ≈ max(BM25, vector), not their sum. Quality improves because RRF requires consensus across both retrievers.
-
----
-
-## Models and Data
-
-- Chat model: [kevinjoythomas/medical-loratuned-chatbot-GGUF](https://huggingface.co/kevinjoythomas/medical-loratuned-chatbot-GGUF)
-- Training dataset: [lavita/ChatDoctor-HealthCareMagic-100k](https://huggingface.co/datasets/lavita/ChatDoctor-HealthCareMagic-100k)
-- Embeddings: nomic-embed-text (via Ollama)
-
-**Training details:** LoRA rank=8, alpha=16, 20.97M trainable params (0.26% of 8.03B). Trained for 1,000 steps (7.1% of dataset), loss 3.74→2.19. Model was undertrained at cutoff — full convergence requires ~14,000 steps. Full training on a T4 GPU takes ~2–3 hours.
-
----
-
-## Key Features
-
-### AI Chatbot
-
-The chatbot is the core OpenHealth interface for doctors and patients. It is LoRA fine-tuned with Unsloth and integrated into a retrieval pipeline for medical question answering.
-
-- Retrieval-augmented generation over curated medical PDFs
-- Context-aware conversations with stored chat history
-- Hybrid BM25 + vector search fused via Reciprocal Rank Fusion (RRF)
-- Microservice-based chat orchestration with Redis, Postgres, RabbitMQ, and ChromaDB
-- Relevance threshold filtering — only cites sources when both retrievers agree (RRF score ≥ 0.020)
-
-### Diagnostic Models
-
-OpenHealth also includes supporting models for:
-
-- Brain tumor detection
-- Lung disease detection
-- Breast cancer detection
-- Diabetes risk prediction
-
-### Collaboration
-
-The platform also includes doctor-to-doctor collaboration and notification flows from the earlier web application.
-
----
+- **Fine-tuning:** QLoRA with Unsloth on `unsloth/llama-3-8b-Instruct-bnb-4bit` (4-bit base, LoRA rank 8, alpha 16, all attention and MLP projections). 20,971,520 trainable parameters, 1,000 steps at an effective batch size of 8 on one Tesla T4, over the 112,165 examples in [`kevinjoythomas/Doctor-Dataset`](https://huggingface.co/datasets/kevinjoythomas/Doctor-Dataset), a prompt-formatted copy of the ChatDoctor HealthCareMagic conversations (logged output in `models/train.ipynb`). The model is exported to [GGUF](https://huggingface.co/kevinjoythomas/medical-loratuned-chatbot-GGUF) and served by Ollama.
+- **Hybrid retrieval:** BM25 (`rank-bm25`) and Chroma MMR search with `nomic-embed-text` embeddings run in parallel threads and are fused with RRF (k = 60). The orchestrator keeps only fused scores of at least 0.020, which means a fused chunk must appear in both result lists (`services/retrieval-service/app/hybrid.py`, `services/chat-orchestrator/app/orchestrator.py`).
+- **Cited answers:** each answer ends with the source file and page of the chunks used, or a note that no document passed the threshold.
+- **Service plumbing:** JWT access and refresh tokens with bcrypt password hashing and refresh-token revocation in Redis, a Redis sliding-window rate limiter at the gateway, and a Celery ingestion worker on RabbitMQ with a dead-letter queue and SHA-256 deduplication of uploaded PDFs.
+- **Tests:** 27 pytest tests across the five services (`services/*/tests/`).
 
 ## Architecture
 
-```text
-api-gateway (:5000) -> auth-service (:5001)
-                    -> chat-orchestrator (:5002)
-                         -> retrieval-service (:5003)
-                              -> ChromaDB (vector)
-                              -> BM25 index (keyword)
-                         -> Ollama (host)
-ingestion-worker <- RabbitMQ
+```mermaid
+flowchart LR
+    UI["Web frontend<br/>website/ or deploy/"] --> GW["api-gateway :5000<br/>JWT check, rate limit"]
+    GW --> AUTH["auth-service :5001"]
+    GW --> CHAT["chat-orchestrator :5002"]
+    CHAT --> RET["retrieval-service :5003<br/>BM25 + vector, RRF"]
+    RET --> VDB[("Chroma index")]
+    CHAT --> OLL["Ollama on host<br/>Llama 3 8B GGUF, nomic-embed-text"]
+    RET --> OLL
+    CHAT -- "ingest task" --> MQ[("RabbitMQ")]
+    MQ --> ING["ingestion-worker<br/>chunk, embed, upsert"]
+    S3[("S3 bucket")] --> ING
+    ING --> VDB
+    AUTH --> PG[("Postgres")]
+    CHAT --> PG
+    GW & AUTH & CHAT --> RD[("Redis")]
 ```
 
-| Service | Port | Stack | Responsibility |
-|---|---|---|---|
-| api-gateway | 5000 | Flask | JWT validation, rate limiting, reverse proxy |
-| auth-service | 5001 | Flask + SQLite/Postgres | Signup/login, JWT issue/refresh |
-| chat-orchestrator | 5002 | Flask + SQLite/Postgres | Chat sessions, RAG orchestration |
-| retrieval-service | 5003 | Flask + ChromaDB + BM25 | Hybrid search, RRF fusion |
-| ingestion-worker | — | Celery + RabbitMQ | Chunking, embedding, ingestion jobs |
-| Ollama | host | GGUF | Llama 3 8B fine-tuned model inference |
+For each message, the gateway validates the JWT and forwards the request to the chat orchestrator. The orchestrator loads recent history from Postgres through a Redis cache, asks the retrieval service for the top 3 chunks, builds the prompt, calls the model through Ollama, and stores both turns.
 
-See [docs/architecture.md](docs/architecture.md) for full chat flow and deployment details.
+## Research
 
----
+A separate evaluation study of this system's triage behavior is in preparation.
 
-## Prerequisites
+## Tech stack
 
-- Docker 24+ and Docker Compose v2 (for Docker setup)
-- Python 3.11+ (for local no-Docker setup)
-- Ollama running on the host with:
+Python, Flask, Celery, LangChain, Chroma, rank-bm25, Ollama, Unsloth, PostgreSQL, Redis, RabbitMQ, Docker Compose; static frontend deployable to Vercel.
+
+## Quickstart
+
+You need Docker with Compose v2, [Ollama](https://ollama.com) running on the host, and Python 3.10+ to build the index.
 
 ```bash
 ollama pull hf.co/kevinjoythomas/medical-loratuned-chatbot-GGUF
 ollama pull nomic-embed-text
 ```
 
-## Quick Start (Docker)
+### 1. Add your own reference documents
+
+The clinical guideline PDFs and the vector index used during development are **not included** in this repository, because the documents are copyrighted. Retrieval needs a corpus, so supply PDFs you are allowed to use (for example open-access guidelines or reviews) and build the index with `website/populate_db.py`:
 
 ```bash
-# 1. Copy and configure environment variables
-cp .env.example .env
+cd website
+mkdir -p data                      # copy your PDFs into website/data/
+pip install -r ../services/retrieval-service/requirements.txt pypdf
+python populate_db.py --reset      # reads ./data, writes ./chroma
+cd ..
+```
 
-# 2. Build and start services
-make build
-make up
+The script loads every PDF in `data/`, splits pages into 800-character chunks with 80 characters of overlap, embeds them with `nomic-embed-text` through Ollama, and stores them in Chroma with IDs of the form `file:page:chunk`. Without `--reset` it only adds chunks it has not seen before. Both `data/` and `chroma/` are git-ignored, so your documents stay local.
 
-# 3. Run database migrations
-make migrate
+### 2. Start the stack
 
-# 4. Check service health
+`docker-compose.yml` needs `DATABASE_URL` and `JWT_SECRET`. There is no root `.env.example`, so create `.env` directly:
+
+```bash
+printf 'DATABASE_URL=postgresql://openhealth:openhealth@postgres:5432/openhealth\nJWT_SECRET=%s\n' "$(openssl rand -hex 32)" > .env
+make build && make up
+docker compose cp website/chroma/. retrieval-service:/app/chroma   # load your index into the shared volume
+docker compose restart retrieval-service                          # BM25 is built on first query and cached
 curl http://localhost:5000/health
 ```
 
-## Quick Start (Local, No Docker)
+To use the chat page, run `python website/serve.py` and open `http://localhost:3000/login`. The pages call the API at `http://localhost:5000` by default; to point them elsewhere, set `window.OPENHEALTH_API` before the page script runs.
 
-```bash
-# Start each service in a separate terminal (or use run_local.ps1)
-cd services/auth-service        && pip install -r requirements.txt && python -m flask run --port 5001
-cd services/chat-orchestrator   && pip install -r requirements.txt && python -m flask run --port 5002
-cd services/retrieval-service   && pip install -r requirements.txt && python -m flask run --port 5003
-cd services/api-gateway         && pip install -r requirements.txt && python -m flask run --port 5000
-cd website                      && python serve.py
+Documents can also be added while the stack runs: upload a PDF to the S3 bucket named by `S3_BUCKET` (AWS credentials go in `.env`), then call `POST /v1/ingest/document` with `{"s3_key": "...", "filename": "..."}`. The worker applies the same chunking into the shared Chroma volume; restart `retrieval-service` afterwards so BM25 picks up the new chunks.
 
-# Ingest PDFs into ChromaDB
-cd services/retrieval-service && python app/populate_db.py
+`make test` runs the service test suites inside the containers.
 
-# Pre-warm Ollama (prevents cold-start timeout on first request)
-ollama run openhealth-doctor "hi"
-```
+### API (base URL `http://localhost:5000/v1`)
 
-Local dev uses SQLite instead of Postgres and fakeredis instead of Redis automatically.
+| Area | Endpoints |
+|---|---|
+| Auth | `POST /auth/signup`, `POST /auth/login`, `POST /auth/refresh`, `GET /auth/me` |
+| Chat | `POST /chat/sessions`, `GET /chat/sessions`, `POST /chat/sessions/{id}/messages`, `GET /chat/sessions/{id}/messages`, `DELETE /chat/sessions/{id}` |
+| Ingestion | `POST /ingest/document` |
 
-See [docs/running-locally.md](docs/running-locally.md) for the full guide.
+## Project structure
 
----
-
-## API
-
-Base URL: `http://localhost:5000/v1`
-
-OpenAPI spec: [docs/api-spec.yaml](docs/api-spec.yaml)
-
-### Auth
-
-- `POST /v1/auth/signup`
-- `POST /v1/auth/login`
-- `POST /v1/auth/refresh`
-- `GET /v1/auth/me`
-
-### Chat
-
-- `POST /v1/chat/sessions`
-- `GET /v1/chat/sessions`
-- `POST /v1/chat/sessions/{id}/messages`
-- `GET /v1/chat/sessions/{id}/messages`
-- `DELETE /v1/chat/sessions/{id}`
-
-### Ingestion
-
-- `POST /v1/ingest/document`
-
----
-
-## Useful Commands
-
-```bash
-make logs           # tail all service logs
-make logs-chat      # tail chat-orchestrator only
-make test           # run test suite
-make migrate        # run DB migrations
-make shell-auth     # open shell in auth-service container
-make clean          # stop and remove containers + volumes
-```
-
----
-
-## Project Structure
-
-```
+```text
 services/
-  api-gateway/          # JWT auth, rate limiting, reverse proxy
-  auth-service/         # User accounts, JWT issue/refresh
-  chat-orchestrator/    # Session management, RAG orchestration
-  retrieval-service/    # Hybrid BM25+vector search, RRF fusion
-website/
-  templates/            # Jinja2 HTML (main_chatbot.html, index.html, login.html)
-  serve.py              # Dev Flask server for frontend
-deploy/                 # Static build for Vercel deployment
-data/                   # Medical PDFs for RAG corpus
-docs/                   # Architecture, evaluation writeups, API spec
-eval_model.py           # 8-case rubric evaluation
-rouge_eval.py           # ROUGE N=50 evaluation
-benchmark_retrieval.py  # Retrieval latency benchmark
-model_eval_report.html  # Full model evaluation report
-retrieval_report.html   # Retrieval strategy comparison report
+  api-gateway/          JWT validation, rate limiting, reverse proxy
+  auth-service/         signup, login, token refresh and revocation
+  chat-orchestrator/    chat sessions, prompt building, RAG flow
+  retrieval-service/    BM25 + vector search, RRF fusion
+  ingestion-worker/     Celery worker: S3 -> chunks -> Chroma
+website/                original Flask app, local frontend (serve.py), populate_db.py
+deploy/                 static frontend for Vercel (routes in vercel.json)
+models/                 train.py, train.ipynb, Ollama Modelfile, early diagnostic prototypes
+eval_model.py           rubric evaluation: base vs fine-tuned vs fine-tuned + RAG
+rouge_eval.py           ROUGE evaluation against held-out doctor answers
+benchmark_retrieval.py  latency benchmark for BM25, vector and hybrid search
+docker-compose.yml      five services plus Postgres, Redis and RabbitMQ
 ```
 
----
+The diagnostic prototypes in `models/` (brain MRI tumor segmentation, a lung cancer survey classifier, a breast cancer stub) come from the first version of the project. Their trained weights are not in the repository.
 
-## Evaluation Reports
+## Limitations and next steps
 
-- [Model Evaluation Report](model_eval_report.html) — ROUGE scores, rubric scoring, training analysis
-- [Retrieval Report](retrieval_report.html) — BM25 vs vector vs hybrid comparison
-- [docs/model-evaluation.md](docs/model-evaluation.md) — Summary of all results
-- [docs/retrieval-evaluation.md](docs/retrieval-evaluation.md) — Retrieval strategy details
+- No reference corpus or index ships with the repository. Until you add PDFs, answers come from the fine-tuned model alone, with a note saying so.
+- The adapter was trained for 1,000 steps at batch size 8, about 8,000 of the 112,165 examples (7%). A full epoch is roughly 14,000 steps.
+- Several scripts and configs assume Windows (`run_local.ps1`, `start_demo.ps1`, `load_dotenv(r"C:\OpenHealth\.env")` in service configs), and the frontend pages are wired to a tunnel URL.
+- The BM25 index is rebuilt only when the retrieval service restarts.
 
----
+OpenHealth is a research project, not a medical device. Do not use its output for diagnosis or treatment.
 
-## Deployment
+## License
 
-Frontend is deployed statically on Vercel from the `deploy/` folder.
-Backend runs locally and is exposed via ngrok (`https://nonsignificantly-untippled-mikaela.ngrok-free.dev`).
-All frontend API calls include `ngrok-skip-browser-warning: true` header.
-
-See [docs/architecture.md](docs/architecture.md) for full deployment details.
+No license specified yet.
