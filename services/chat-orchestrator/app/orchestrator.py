@@ -68,11 +68,13 @@ def _call_retrieval_service(query: str, top_k: int = 3) -> list[Document]:
         resp.raise_for_status()
         results = resp.json().get("results", [])
         # Only keep results whose score indicates genuine relevance.
-        # RRF scores: a document ranked highly by *both* retrievers scores ~0.033;
-        # a document from only one retriever scores ~0.016.  Threshold 0.020 drops
-        # documents that appeared in just one ranked list near the bottom — i.e. no
-        # real signal.  score=None (vector-only fallback) is kept so cold-start works.
-        MIN_SCORE = 0.020
+        # RRF scores (k=60): a document ranked first by *both* retrievers scores ~0.033;
+        # a document ranked first by only one retriever scores 1/61 = ~0.0164.
+        # The old floor of 0.020 therefore passed only chunks found by both retrievers,
+        # and in a 30-question test no answer received any context.  0.015 lets a
+        # strong single-retriever match through while still dropping weak tail hits.
+        # score=None (vector-only fallback) is kept so cold-start works.
+        MIN_SCORE = 0.015
         return [
             Document(page_content=r["content"], metadata=r.get("metadata", {}))
             for r in results

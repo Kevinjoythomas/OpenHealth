@@ -10,7 +10,7 @@ requests==2.32.3
 PyJWT==2.10.1
 langchain==0.3.14
 langchain-ollama==0.2.2
-langchain-core==0.3.28
+langchain-core==0.3.29
 langchain-chroma==0.1.4
 python-dotenv==1.0.1
 python-json-logger==2.0.7

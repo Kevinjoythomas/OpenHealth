@@ -11,7 +11,7 @@ General-purpose chat models give generic medical answers and cannot point to a s
 ## Highlights
 
 - **Fine-tuning:** QLoRA with Unsloth on `unsloth/llama-3-8b-Instruct-bnb-4bit` (4-bit base, LoRA rank 8, alpha 16, all attention and MLP projections). 20,971,520 trainable parameters, 1,000 steps at an effective batch size of 8 on one Tesla T4, over the 112,165 examples in [`kevinjoythomas/Doctor-Dataset`](https://huggingface.co/datasets/kevinjoythomas/Doctor-Dataset), a prompt-formatted copy of the ChatDoctor HealthCareMagic conversations (logged output in `models/train.ipynb`). The model is exported to [GGUF](https://huggingface.co/kevinjoythomas/medical-loratuned-chatbot-GGUF) and served by Ollama.
-- **Hybrid retrieval:** BM25 (`rank-bm25`) and Chroma MMR search with `nomic-embed-text` embeddings run in parallel threads and are fused with RRF (k = 60). The orchestrator keeps only fused scores of at least 0.020, which means a fused chunk must appear in both result lists (`services/retrieval-service/app/hybrid.py`, `services/chat-orchestrator/app/orchestrator.py`).
+- **Hybrid retrieval:** BM25 (`rank-bm25`) and Chroma MMR search with `nomic-embed-text` embeddings run in parallel threads and are fused with RRF (k = 60). The orchestrator keeps fused scores of at least 0.015, so a chunk ranked first by either retriever (1/61 = 0.0164) passes while weaker matches are dropped (`services/retrieval-service/app/hybrid.py`, `services/chat-orchestrator/app/orchestrator.py`). The floor used to be 0.020, which only passed chunks found by both retrievers; in a 30-question test that left every answer without a citation, and 0.015 restored citations on 10 of 10.
 - **Cited answers:** each answer ends with the source file and page of the chunks used, or a note that no document passed the threshold.
 - **Service plumbing:** JWT access and refresh tokens with bcrypt password hashing and refresh-token revocation in Redis, a Redis sliding-window rate limiter at the gateway, and a Celery ingestion worker on RabbitMQ with a dead-letter queue and SHA-256 deduplication of uploaded PDFs.
 - **Tests:** 27 pytest tests across the five services (`services/*/tests/`).
@@ -38,9 +38,20 @@ flowchart LR
 
 For each message, the gateway validates the JWT and forwards the request to the chat orchestrator. The orchestrator loads recent history from Postgres through a Redis cache, asks the retrieval service for the top 3 chunks, builds the prompt, calls the model through Ollama, and stores both turns.
 
-## Research
+## Safety gate and evaluation
 
-A separate evaluation study of this system's triage behavior is in preparation.
+The chat path above answers every question. For emergencies that is the wrong behavior, so a companion research harness adds a **triage gate** that runs before the model: 40 red-flag patterns plus a zero-shot Gemma 3 4B check. On held-out, physician-labeled HealthBench conversations the gate catches 92% of emergent cases at 92% specificity (AUROC 0.95), and the gated pipeline runs at a 2.9 s median per message on a 4 GB laptop GPU. The same study found that the keyword safety rubric commonly used to score medical chatbots stops working after fine-tuning: its agreement with blinded judges fell from Cohen's kappa 0.61 to 0.03, replicated on 273 physician-labeled conversations. The gate code and the full write-up will be released with the paper, which is under review; the harness is not part of this repository yet.
+
+Measured on this repository (October 2026, same Q4_K_M model):
+
+| What | Result |
+|---|---|
+| Hybrid retrieval, warm | about 0.1 s per query (81 ms p50 server-side); 3.5 s cold while the BM25 index builds |
+| End-to-end chat, RTX 3050 Laptop 4 GB (model split across CPU and GPU) | p50 14.8 s, p95 23.5 s at 1 user; p95 58 s at 4 users; 0 errors |
+| Model alone, Tesla T4 | 4.2 s per answer, 32 tokens/s, fully on GPU |
+| Fine-tune vs base, ROUGE against the doctors' answers on 100 held-out questions | ROUGE-1 0.258 to 0.327, ROUGE-2 0.032 to 0.061; answers 2.3x shorter |
+
+ROUGE measures overlap with the corpus answers, not clinical quality; that is what the gate and the paper are for.
 
 ## Tech stack
 
