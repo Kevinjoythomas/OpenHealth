@@ -130,7 +130,7 @@ The diagnostic prototypes in `models/` (brain MRI tumor segmentation, a lung can
 
 - No reference corpus or index ships with the repository. Until you add PDFs, answers come from the fine-tuned model alone, with a note saying so.
 - The adapter was trained for 1,000 steps at batch size 8, about 8,000 of the 112,165 examples (7%). A full epoch is roughly 14,000 steps.
-- Several scripts and configs assume Windows (`run_local.ps1`, `start_demo.ps1`, `load_dotenv(r"C:\OpenHealth\.env")` in service configs), and the frontend pages are wired to a tunnel URL.
+- The demo scripts (`run_local.ps1`, `start_demo.ps1`) are PowerShell; set `OPENHEALTH_PUBLIC_URL` to your own tunnel before `start_demo.ps1`. Point the frontend pages at your API address as described in the Quickstart.
 - The BM25 index is rebuilt only when the retrieval service restarts.
 
 OpenHealth is a research project, not a medical device. Do not use its output for diagnosis or treatment.

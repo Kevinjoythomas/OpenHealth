@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
 
-load_dotenv(dotenv_path=r"C:\OpenHealth\.env", override=True)
+load_dotenv(override=True)  # reads .env from the working directory or any parent; Docker Compose passes env directly
 
 
 class Config:

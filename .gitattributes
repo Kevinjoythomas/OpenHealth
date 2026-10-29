@@ -1,0 +1,4 @@
+*.ipynb linguist-documentation
+retrieval_report.html linguist-documentation
+website/static/** linguist-vendored
+deploy/** linguist-documentation

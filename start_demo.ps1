@@ -8,6 +8,7 @@ $Root   = $PSScriptRoot
 $Env    = "$Root\.env"
 $Python = "C:\Users\kevin\anaconda3\envs\chromadb\python.exe"
 $Ngrok  = "ngrok"
+$NgrokUrl = $env:OPENHEALTH_PUBLIC_URL   # set to your own tunnel URL before running
 
 # Load .env into session
 Get-Content $Env | ForEach-Object {
@@ -34,7 +35,7 @@ Write-Host ""
 # 1. Ngrok tunnel
 Write-Host "Starting ngrok tunnel..." -ForegroundColor Yellow
 Start-Process powershell -ArgumentList "-NoExit", "-Command", "& '$Ngrok' start backend" -WindowStyle Normal
-Write-Host "  ngrok -> https://nonsignificantly-untippled-mikaela.ngrok-free.dev" -ForegroundColor Green
+Write-Host "  ngrok -> $NgrokUrl" -ForegroundColor Green
 Start-Sleep -Seconds 3
 
 # 2. Backend services
@@ -83,7 +84,7 @@ Write-Host "  Vercel (public) : https://open-health-front.vercel.app" -Foregroun
 Write-Host "  Login           : /login" -ForegroundColor White
 Write-Host "  Chatbot         : /chat" -ForegroundColor White
 Write-Host ""
-Write-Host "  Backend (ngrok) : https://nonsignificantly-untippled-mikaela.ngrok-free.dev" -ForegroundColor White
+Write-Host "  Backend (ngrok) : $NgrokUrl" -ForegroundColor White
 Write-Host ""
 Write-Host "  To stop: close the 5 terminal windows that opened" -ForegroundColor DarkGray
 Write-Host "==========================================" -ForegroundColor Cyan
