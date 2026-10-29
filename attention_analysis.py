@@ -1,3 +1,4 @@
+import os
 """
 attention_analysis.py — Mechanism hint for H3
 ==============================================
@@ -44,7 +45,7 @@ RESULTS_DIR   = Path("results")
 
 # GGUF paths for optional mechanistic section
 FINETUNED_GGUF = Path("models/gguf_doctor_model_llama-unsloth.Q4_K_M.gguf")
-BASE_GGUF      = Path(r"C:\Users\kevin\.ollama\models\blobs\sha256-6a0746a1ec1aef3e7ec53868f220ff6e389f6f8ef87a01d77c96807de94ca2aa")
+BASE_GGUF      = Path(os.path.expanduser(r"~/.ollama/models/blobs/sha256-6a0746a1ec1aef3e7ec53868f220ff6e389f6f8ef87a01d77c96807de94ca2aa"))
 
 try:
     import matplotlib

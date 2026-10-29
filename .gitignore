@@ -35,7 +35,6 @@ env/
 *.swo
 .DS_Store
 Thumbs.db
-CLAUDE.md
 
 # Runtime / local data
 *.log

@@ -3,7 +3,7 @@
 
 $Root = $PSScriptRoot
 $Env = "$Root\.env"
-$Python = "C:\Users\kevin\anaconda3\envs\chromadb\python.exe"
+$Python = "python"  # or the full path to your interpreter
 
 # Install shared dev deps
 Write-Host "-> Installing dev dependencies..." -ForegroundColor Cyan
